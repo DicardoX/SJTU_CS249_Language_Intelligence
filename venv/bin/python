@@ -1,0 +1,1 @@
+/opt/anaconda3/python.app/Contents/MacOS/python
