@@ -10,7 +10,7 @@
 # - 6. Cal_zero_crossing_rate(frames): Calculate Zero-Crossing Rate (ZCR)                         #
 # - 7. De_pre_emphasis(audio, alpha): to improve the total SNR (Signal to Noise Ratio), audio     #
 #   signal is pre-emphasised by default                                                           #
-
+# - 8. Pre_emphasis(audio, alpha): to improve the total SNR (Signal to Noise Ratio)               #
 ###################################################################################################
 
 
@@ -35,9 +35,18 @@ def get_input(audioPath):
 
 # De-pre-emphasis, to improve the total SNR (Signal to Noise Ratio), audio signal is pre-emphasised by default
 def de_pre_emphasis(audio, alpha):
+    for i in range(len(audio) - 1, 1, -1):
+        audio[i] += alpha * audio[i-1]
     audio[0] = audio[0] / (1 - alpha)
+    # for i in range(1, len(audio), 1):
+    #     audio[i] += alpha * audio[i - 1]
+    return audio
+
+# Pre-emphasis, to improve the total SNR (Signal to Noise Ratio)
+def pre_emphasis(audio, alpha):
+    audio[0] = (1 - alpha) * audio[0]
     for i in range(1, len(audio), 1):
-        audio[i] += alpha * audio[i - 1]
+        audio[i] -= alpha * audio[i - 1]
     return audio
 
 # Self-Correlation

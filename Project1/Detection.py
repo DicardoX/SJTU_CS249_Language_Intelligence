@@ -8,9 +8,10 @@ selfCorrelationCoefficient = int(frameSize / 500)
 def main():
     # Input
     audio, sampleRarte, duration = get_input("./input/input.wav")
-    # # De_pre-emphasis
-    # audio = de_pre_emphasis(audio, preEmphasisAlpha)
-    #
+    # Pre-emphasis
+    # audio = pre_emphasis(audio, preEmphasisAlpha)
+    # De_pre-emphasis
+    audio = de_pre_emphasis(audio, preEmphasisAlpha)
     # Divide frames and add windows
     ori_frames, frames = divide_frames(audio, frameSize, frameShift)
     # Calculate Short-term Energy
