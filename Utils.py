@@ -6,10 +6,10 @@
 # - 3. Divide_frames(audio, frameSize): Divide Frame, return a list of frames (np.array)          #
 # - 4. Draw_time_domain_diagram(audio): Draw the results                                          #
 # - 5. Generate_short_term_energy(frames): Generate Short-Term Energy, which is the quadratic sum #
-#   of sample points in one frame, return (np.array)                                              #
+#      of sample points in one frame, return (np.array)                                           #
 # - 6. Cal_zero_crossing_rate(frames): Calculate Zero-Crossing Rate (ZCR)                         #
 # - 7. De_pre_emphasis(audio, alpha): to improve the total SNR (Signal to Noise Ratio), audio     #
-#   signal is pre-emphasised by default                                                           #
+#      signal is pre-emphasised by default                                                        #
 # - 8. Pre_emphasis(audio, alpha): to improve the total SNR (Signal to Noise Ratio)               #
 ###################################################################################################
 
