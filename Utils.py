@@ -50,7 +50,6 @@ def self_correlation(frames, k):
         ret.append(tmpSum)
     return ret
 
-
 # Implement Window: Rectangle/Hanning/Hamming, N is window length
 def build_windows(name='Hamming', N=20):
     # Default none
@@ -115,23 +114,23 @@ def draw_time_domain_diagram(audio, energys, ori_frame, frame, ZCR, SCC):
     plt.title("Audio Signal on Time Domain")
     plt.xlabel("Sample points")
     plt.ylabel("Amplitude")
-    # Short-Term Energy
-    plt.subplot(612)
-    plt.plot(energys)
-    plt.title("Short-Term Energy")
-    plt.xlabel("frame")
-    plt.ylabel("Amplitude")
     # Original 30th frame
-    plt.subplot(613)
+    plt.subplot(612)
     plt.plot(ori_frame)
     plt.title("The 30th frame of original audio")
     plt.xlabel("sample points")
     plt.ylabel("Amplitude")
     # Windowed 30th frame
-    plt.subplot(614)
+    plt.subplot(613)
     plt.plot(frame)
     plt.title("The 30th frame of windowed audio")
     plt.xlabel("sample points")
+    plt.ylabel("Amplitude")
+    # Short-Term Energy
+    plt.subplot(614)
+    plt.plot(energys)
+    plt.title("Short-Term Energy")
+    plt.xlabel("frame")
     plt.ylabel("Amplitude")
     # Zero-Crossing Rate
     plt.subplot(615)
