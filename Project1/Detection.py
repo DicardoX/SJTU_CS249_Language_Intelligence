@@ -9,7 +9,7 @@ def main():
     # Input
     audio, sampleRarte, duration = get_input("./input/input.wav")
     # Pre-emphasis
-    # audio = pre_emphasis(audio, preEmphasisAlpha)
+    audio = pre_emphasis(audio, preEmphasisAlpha)
     # De_pre-emphasis
     audio = de_pre_emphasis(audio, preEmphasisAlpha)
     # Divide frames and add windows
