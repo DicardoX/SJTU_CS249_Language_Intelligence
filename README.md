@@ -2,6 +2,8 @@
 
 [[python做语音信号处理](https://www.cnblogs.com/LXP-Never/p/10078200.html#信号加窗%C2%A0)]
 
+[python如何 FFT(快速傅里叶变换) 求幅度、频率（超详细 含推导过程）](https://blog.csdn.net/weixin_39591031/article/details/110392352) 
+
 -------------
 
 ## 1. 清音段、浊音段和过渡段
@@ -52,5 +54,7 @@
 
 ------------
 
+## 6. 快速傅立叶变换`FFT`
 
-
+- [FFT变换后，坐标单位是什么？](https://blog.csdn.net/guoruijiushiwo/article/details/78003632)**假设采样频率为 1M , 采样点数为1024 ,那么横坐标第N个点代表的频率 X(N) = (1M / 1024) * N**
+- 可以直接对每一帧进行`FFT`操作（**短时频谱**），再利用上述公式进行横坐标（频率）的设置。

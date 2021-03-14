@@ -11,6 +11,7 @@
 # - 7. De_pre_emphasis(audio, alpha): to improve the total SNR (Signal to Noise Ratio), audio     #
 #      signal is pre-emphasised by default                                                        #
 # - 8. Pre_emphasis(audio, alpha): to improve the total SNR (Signal to Noise Ratio)               #
+# - 9. Fourier_transform(audio): Fast Fourier transform (per frame)                               #
 ###################################################################################################
 
 
@@ -19,6 +20,7 @@ import numpy as np
 import soundfile as sf
 from matplotlib import pyplot as plt
 from scipy.fftpack import fft, ifft, rfft
+
 
 # Import the input source, audio(音频，np.array), sampleRate(采样率), duration(时长(s))
 def get_input(audioPath):
@@ -33,14 +35,16 @@ def get_input(audioPath):
     duration = len(audio) * 1.0 / sampleRate
     return audio, sampleRate, duration
 
+
 # De-pre-emphasis, to improve the total SNR (Signal to Noise Ratio), audio signal is pre-emphasised by default
 def de_pre_emphasis(audio, alpha):
     for i in range(len(audio) - 1, 1, -1):
-        audio[i] += alpha * audio[i-1]
+        audio[i] += alpha * audio[i - 1]
     audio[0] = audio[0] / (1 - alpha)
     # for i in range(1, len(audio), 1):
     #     audio[i] += alpha * audio[i - 1]
     return audio
+
 
 # Pre-emphasis, to improve the total SNR (Signal to Noise Ratio)
 def pre_emphasis(audio, alpha):
@@ -48,6 +52,7 @@ def pre_emphasis(audio, alpha):
     for i in range(1, len(audio), 1):
         audio[i] -= alpha * audio[i - 1]
     return audio
+
 
 # Self-Correlation
 def self_correlation(frames, k):
@@ -58,6 +63,7 @@ def self_correlation(frames, k):
             tmpSum += frames[i][j] * frames[i][j + k]
         ret.append(tmpSum)
     return ret
+
 
 # Implement Window: Rectangle/Hanning/Hamming, N is window length
 def build_windows(name='Hamming', N=20):
@@ -73,6 +79,7 @@ def build_windows(name='Hamming', N=20):
     elif name == 'Rectangle':
         window = np.ones(N)
     return window
+
 
 # Divide Frame, return a list of frames (np.array)
 def divide_frames(audio, frameSize, frameShift):
@@ -91,6 +98,7 @@ def divide_frames(audio, frameSize, frameShift):
         frames.append(np.array(frame))
     return np.array(ori_frames), np.array(frames)
 
+
 # Generate Short-Term Energy, which is the quadratic sum of sample points in one frame, return (np.array)
 def generate_short_term_energy(frames):
     ret = []
@@ -101,59 +109,100 @@ def generate_short_term_energy(frames):
         ret.append(energy)
     return np.array(ret)
 
+
 # Calculate Zero-Crossing Rate (ZCR)
 def cal_zero_crossing_rate(frames):
     ret = []
     for i in range(0, len(frames), 1):
         count = 0
         for j in range(0, len(frames[i]), 1):
-            if frames[i][j] == 0 or (j > 0 and ((frames[i][j - 1] > 0 and frames[i][j] < 0) or (frames[i][j - 1] < 0 and frames[i][j] > 0))):
+            if frames[i][j] == 0 or (j > 0 and (
+                    (frames[i][j - 1] > 0 and frames[i][j] < 0) or (frames[i][j - 1] < 0 and frames[i][j] > 0))):
                 count += 1
         ret.append(count)
     return np.array(ret)
 
+
+# Fast Fourier transform (per frame, Short-Time Frequency Spectrum )
+def fourier_transform(frames, frameSize, sampleRate):
+    fft_signals = []
+    # X-axis transform in Fast Fourier Transform
+    x = np.arange(int(frameSize / 2))
+    for i in range(0, len(x), 1):
+        x[i] = (sampleRate / frameSize) * x[i]
+    # Short-Time Frequency Spectrum
+    for i in range(0, len(frames), 1):
+        fft_signal = []
+        for j in range(0, len(frames[i]), 1):
+            fft_signal.append(frames[i][j])
+        if len(fft_signal) > 0:
+            fft_signal = fft(np.array(fft_signal))
+            # Cut half
+            cut_fft_signal = []
+            for j in range(0, int(len(fft_signal) / 2), 1):
+                cut_fft_signal.append(fft_signal[j])
+            fft_signals.append(np.array(cut_fft_signal))
+    return np.abs(np.array(fft_signals)), x
+
+
 # Draw audio time domain diagram
-def draw_time_domain_diagram(audio, energys, ori_frame, frame, ZCR, SCC):
+def draw_time_domain_diagram(audio, energys, ori_frame, frame, ZCR, SCC, fft_signal, fft_x):
     # Figure size
     plt.rcParams['figure.figsize'] = (20.0, 36.0)
 
     # Audio signal
     plt.subplot(611)  # row col pos
-    plt.plot(audio)
+    x = np.arange(len(audio))
+    plt.plot(x, audio, 'black')
     plt.title("Audio Signal on Time Domain")
     plt.xlabel("Sample points")
     plt.ylabel("Amplitude")
-    # Original 30th frame
+    # Fourier Transform
     plt.subplot(612)
-    plt.plot(ori_frame)
+    # X-axis transform in Fast Fourier Transform
+    plt.plot(fft_x, fft_signal, 'black')
+    plt.title("The Fourier Transform signal on Frequency Domain")
+    plt.xlabel("frequency")
+    plt.ylabel("Amplitude")
+    ax = plt.gca()
+    x_major_locator = plt.MultipleLocator(500)
+    ax.xaxis.set_major_locator(x_major_locator)
+    plt.xlim(-100, 6000)
+    # Original 30th frame
+    plt.subplot(613)
+    x = np.arange(len(ori_frame))
+    plt.plot(x, ori_frame, 'black')
     plt.title("The 30th frame of original audio")
     plt.xlabel("sample points")
     plt.ylabel("Amplitude")
     # Windowed 30th frame
-    plt.subplot(613)
-    plt.plot(frame)
+    plt.subplot(614)
+    x = np.arange(len(frame))
+    plt.plot(x, frame, 'black')
     plt.title("The 30th frame of windowed audio")
     plt.xlabel("sample points")
     plt.ylabel("Amplitude")
     # Short-Term Energy
-    plt.subplot(614)
-    plt.plot(energys)
+    plt.subplot(615)
+    x = np.arange(len(energys))
+    plt.plot(x, energys, 'black')
     plt.title("Short-Term Energy")
     plt.xlabel("frame")
     plt.ylabel("Amplitude")
     # Zero-Crossing Rate
-    plt.subplot(615)
-    plt.plot(ZCR)
+    plt.subplot(616)
+    x = np.arange(len(ZCR))
+    plt.plot(x, ZCR, 'black')
     plt.title("The Zero-Crossing Rate of windowed audio")
     plt.xlabel("frame")
     plt.ylabel("Amplitude")
+
     # Self-Correlation
-    plt.subplot(616)
-    plt.plot(SCC)
-    plt.title("The Self-Correlation of windowed audio")
-    plt.xlabel("frame")
-    plt.ylabel("Amplitude")
+    # plt.subplot(616)
+    # plt.plot(SCC)
+    # plt.title("The Self-Correlation of windowed audio")
+    # plt.xlabel("frame")
+    # plt.ylabel("Amplitude")
 
     plt.savefig("./output/output")
     plt.show()
-
