@@ -9,7 +9,6 @@ def main():
     # Input
     audio, sampleRate, duration = get_input("./input/input.wav")
     # Regularization
-    print(sampleRate)
     audio = audio / np.max(audio)
     # Divide frames and add windows
     ori_frames, frames = divide_frames(audio, frameSize, frameShift)
@@ -20,7 +19,8 @@ def main():
     # Calculate Zero-Crossing Rate
     ZCR = cal_zero_crossing_rate(frames)
     # Calculate Self-Correlation
-    SCC = self_correlation(frames, selfCorrelationCoefficient)
+    SCC = self_correlation(frames)
+    print("Self Correlation completed!")
     # Draw results
     draw_time_domain_diagram(audio, energies, ori_frames[29], frames[29], ZCR, SCC, fft_signals[53], fft_x)
 
