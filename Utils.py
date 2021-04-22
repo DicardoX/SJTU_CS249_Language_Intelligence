@@ -24,7 +24,7 @@ from scipy.fftpack import fft, ifft, rfft
 
 # Import the input source, audio(音频，np.array), sampleRate(采样率), duration(时长(s))
 def get_input(audioPath):
-    audio, sampleRate = sf.read(audioPath)
+    audio, sample_rate = sf.read(audioPath)
     if len(audio.shape) == 1:
         print("Mono audio.")
     else:
@@ -32,39 +32,40 @@ def get_input(audioPath):
         audio1 = audio[:, 0]
         audio2 = audio[:, 1]
         audio = audio1 * 0.5 + audio2 * 0.5
-    duration = len(audio) * 1.0 / sampleRate
-    return audio, sampleRate, duration
+    duration = len(audio) * 1.0 / sample_rate
+    print("Input completed! Sample rate:", sample_rate, "| duration:", duration)
+    return audio, sample_rate, duration
 
 
 # De-pre-emphasis, to improve the total SNR (Signal to Noise Ratio), audio signal is pre-emphasised by default
-def de_pre_emphasis(audio, alpha):
-    for i in range(len(audio) - 1, 1, -1):
-        audio[i] += alpha * audio[i - 1]
-    audio[0] = audio[0] / (1 - alpha)
-    return audio
+# def de_pre_emphasis(audio, alpha):
+#     for i in range(len(audio) - 1, 1, -1):
+#         audio[i] += alpha * audio[i - 1]
+#     audio[0] = audio[0] / (1 - alpha)
+#     return audio
 
 
 # Pre-emphasis, to improve the total SNR (Signal to Noise Ratio)
-def pre_emphasis(audio, alpha):
-    audio[0] = (1 - alpha) * audio[0]
-    for i in range(1, len(audio), 1):
-        audio[i] -= alpha * audio[i - 1]
-    return audio
+# def pre_emphasis(audio, alpha):
+#     audio[0] = (1 - alpha) * audio[0]
+#     for i in range(1, len(audio), 1):
+#         audio[i] -= alpha * audio[i - 1]
+#     return audio
 
 
 # Self-Correlation
-def self_correlation(frames):
-    print("len", len(frames))
+# Return the array and the basic frequency
+def self_correlation(frame, maxT):
+    print("Begin Self Correlation...")
     ret = []
-    for i in range(0, len(frames), 1):
-        print(i)
-        tmpRet = []
-        for k in range(0, len(frames[i]) - 1, 1):
-            tmpSum = 0
-            for j in range(0, len(frames[i]) - k, 1):
-                tmpSum += frames[i][j + k] * frames[i][j]
-            tmpRet.append(tmpSum)
-        ret.append(tmpRet)
+    for l in range(0, maxT, 1):
+        tmp_sum = 0
+        for j in range(0, len(frame) - l, 1):
+            tmp_sum += frame[j + l] * frame[j]
+        ret.append(tmp_sum)
+    print("Self Correlation completed, begin calculate the basic frequency...")
+    # Get the peak of the curve, note that it is in FRAME unit!
+
     return ret
 
 
@@ -81,11 +82,13 @@ def build_windows(name='Hamming', N=20):
     # Rectangle
     elif name == 'Rectangle':
         window = np.ones(N)
+    print("Build windows completed:", name)
+
     return window
 
 
 # Divide Frame, return a list of frames (np.array)
-def divide_frames(audio, frameSize, frameShift):
+def divide_frames(audio, frameSize, frameShift, duration):
     frames = []
     ori_frames = []
     # Build windows
@@ -99,7 +102,10 @@ def divide_frames(audio, frameSize, frameShift):
             frame.append(audio[j] * windows[frameSize - (j - i) - 1])
         ori_frames.append(np.array(ori_frame))
         frames.append(np.array(frame))
-    return np.array(ori_frames), np.array(frames)
+    time_for_each_frame = duration / (len(frames) - (len(frames) - 1) * (frameShift / frameSize))
+
+    print("Divide frames completed! | frame amount", len(frames), "| frame size:", frameSize, "| frame shift:", frameShift, "| time for each frame:", round(time_for_each_frame * 1000, 3), "ms")
+    return np.array(ori_frames), np.array(frames), time_for_each_frame
 
 
 # Generate Short-Term Energy, which is the quadratic sum of sample points in one frame, return (np.array)
@@ -110,6 +116,7 @@ def generate_short_term_energy(frames):
         for j in range(0, len(frames[i]), 1):
             energy += pow(frames[i][j], 2)
         ret.append(energy)
+    print("Generation of short term energy completed!")
     return np.array(ret)
 
 
@@ -153,7 +160,9 @@ def fourier_transform(frames, frameSize, sampleRate):
 
 
 # Draw audio time domain diagram
-def draw_time_domain_diagram(audio, energys, ori_frame, frame, ZCR, SCC, fft_signal, fft_x):
+def draw_time_domain_diagram(audio, energies, ori_frame, frame, ZCR, SCC, fft_signal, fft_x):
+    print("Begin draw results...")
+
     # Figure size
     plt.rcParams['figure.figsize'] = (20.0, 42.0)
 
@@ -191,8 +200,8 @@ def draw_time_domain_diagram(audio, energys, ori_frame, frame, ZCR, SCC, fft_sig
     plt.ylabel("Amplitude")
     # Short-Term Energy
     plt.subplot(715)
-    x = np.arange(len(energys))
-    plt.plot(x, energys, 'black')
+    x = np.arange(len(energies))
+    plt.plot(x, energies, 'black')
     plt.title("Short-Term Energy")
     plt.xlabel("frame")
     plt.ylabel("Amplitude")
@@ -206,9 +215,9 @@ def draw_time_domain_diagram(audio, energys, ori_frame, frame, ZCR, SCC, fft_sig
 
     # Self-Correlation
     plt.subplot(717)
-    x = np.arange(len(SCC[0]))
-    plt.plot(x, SCC[0], 'black')
-    plt.title("The Self-Correlation of windowed audio")
+    x = np.arange(len(SCC))
+    plt.plot(x, SCC, 'black')
+    plt.title("The Self-Correlation Curve of windowed audio")
     plt.xlabel("frame")
     plt.ylabel("Amplitude")
 
