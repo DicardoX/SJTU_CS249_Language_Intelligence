@@ -2,5 +2,13 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/kaldi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/kaldi-io-for-python" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pykaldi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pykaldi/clif" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pykaldi/protobuf-2.6.1/clif" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pykaldi/tools/clif" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pykaldi/tools/clif_backend" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pykaldi/tools/protobuf" vcs="Git" />
   </component>
 </project>
