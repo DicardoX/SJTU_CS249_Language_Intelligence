@@ -7,6 +7,7 @@ import joblib
 import pickle
 import os
 from Detection import *
+import sklearn
 
 N = 4096
 
@@ -15,6 +16,20 @@ N = 4096
 cos_signal = np.array([(np.cos(2 * 500 * np.pi * n / (N - 1)) + np.cos(2 * 200 * np.pi * n / (N - 1))) for n in range(N)])
 # cos_signal = np.array([(np.cos(2 * 500 * np.pi * n / (N - 1))) for n in range(N)])
 
+model = sklearn.linear_model.LogisticRegression(penalty="l2", C=0.5, random_state=123, solver="liblinear")
+
+train_X = [[1], [2], [3], [4], [5]]
+train_Y = [0, 1, 0, 1, 0]
+
+model.fit(train_X, train_Y)
+
+test_X = [[1], [2], [3], [4], [5]]
+test_Y = model.predict(test_X)
+
+print(model.predict_proba(test_X))
+
+print(test_Y)
+
 
 # cos_signal = np.abs(librosa.stft(cos_signal, n_fft=1024, hop_length=512, win_length=None, window="hann"))
 
@@ -22,16 +37,16 @@ cos_signal = np.array([(np.cos(2 * 500 * np.pi * n / (N - 1)) + np.cos(2 * 200 *
 
 # ret = librosa.feature.zero_crossing_rate(cos_signal, 1024, 512)
 
-ret = librosa.feature.mfcc(cos_signal, sr=4096, S=None, n_mfcc=13, hop_length=4097, dct_type=2, norm='ortho')
-
-filenamelst_abspathname = os.path.abspath('model.pickle')
-print(filenamelst_abspathname)
-
-# print(ret.shape)
-
-start_moment = 0.001
-time_unit = 30
-t = time_unit / 3
+# ret = librosa.feature.mfcc(cos_signal, sr=4096, S=None, n_mfcc=13, hop_length=4097, dct_type=2, norm='ortho')
+#
+# filenamelst_abspathname = os.path.abspath('model.pickle')
+# print(filenamelst_abspathname)
+#
+# # print(ret.shape)
+#
+# start_moment = 0.001
+# time_unit = 30
+# t = time_unit / 3
 
 # start_frame_idx1 = int((start_moment * 1000 - time_unit) / t) + 1
 # if start_moment * 1000 - time_unit < 0:
@@ -39,15 +54,15 @@ t = time_unit / 3
 # start_frame_idx2 = int(start_moment * 1000 / t)
 # print(start_frame_idx1, start_frame_idx2)
 
-model = joblib.load("model_save/model.pkl")
-# with open("./model_save/model.pickle", "rb") as f:
-#     model = pickle.load(f)
-
-print(dev_features_vector_list_dataset)
-
-print(model.predict(dev_features_vector_list_dataset[1]))
-
-ret = ret.reshape([1, 13])
+# model = joblib.load("model_save/model.pkl")
+# # with open("./model_save/model.pickle", "rb") as f:
+# #     model = pickle.load(f)
+#
+# print(dev_features_vector_list_dataset)
+#
+# print(model.predict(dev_features_vector_list_dataset[1]))
+#
+# ret = ret.reshape([1, 13])
 
 
 # ret = [[0 for i in range(int(4096 / 2) + 1)] for j in range(len(cos_signal[0]))]

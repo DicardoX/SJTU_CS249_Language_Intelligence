@@ -18,7 +18,6 @@
 import os
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.fftpack import fft, ifft, rfft
 import librosa
 import time
 from scipy import signal
@@ -70,6 +69,8 @@ def get_input(dirPath, dataset_type):
 
     # Sort the file
     wav_files.sort()
+
+    print(wav_files)
 
     # Traverse the wave
     for i in range(len(wav_files)):
