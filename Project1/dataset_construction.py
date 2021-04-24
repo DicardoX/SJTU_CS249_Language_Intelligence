@@ -13,6 +13,8 @@ sample_rate = 16000  # Sample rate
 
 # Reconstructed dev dataset of features vector list
 dev_features_vector_list_dataset = []
+# Reconstructed test dataset of features vector list
+test_features_vector_list_dataset = []
 # Reformatted dev labels vector
 labels_list = []
 
@@ -94,17 +96,27 @@ def reformat_labels_list():
 
 # Construct dev dataset: data_type 0 for dev, 1 for test, 2 for train
 def construct_dataset(dataset_type):
-    global frame_size, frame_shift
-    global dev_features_vector_list_dataset, labels_list, sample_rate
+    global frame_size, frame_shift, sample_rate
+    global dev_features_vector_list_dataset, labels_list, test_features_vector_list_dataset
 
     if dataset_type == 0:
         print("----------------------------------------")
         print("Begin to construct dev dataset...")
         print("----------------------------------------")
-
         # Input
-        # audio, sample_rate, duration = get_input("./input/input.wav")
         audio_list, sample_rate_list, duration_list, labels_list = get_input("../vad", 0)  # 0 for dev dataset
+    elif dataset_type == 1:
+        print("----------------------------------------")
+        print("Begin to construct test dataset...")
+        print("----------------------------------------")
+        # Input
+        audio_list, sample_rate_list, duration_list = get_input("../vad", 1)  # 1 for test dataset
+    else:
+        print("----------------------------------------")
+        print("Begin to construct train dataset...")
+        print("----------------------------------------")
+        # Input
+        audio_list, sample_rate_list, duration_list, labels_list = get_input("../vad", 2)  # 2 for train dataset
 
     # Calculate frame size to make the unit time in 10 ~ 30ms, here is 25ms
     frame_size = int(30 * sample_rate_list[0] / 1000)
@@ -119,8 +131,8 @@ def construct_dataset(dataset_type):
         audio_list[i] = audio_list[i] / np.max(audio_list[i])
 
     # Construct the features vector list
-    # for i in range(10):
-    for i in range(total_amount):
+    for i in range(10):
+    # for i in range(total_amount):
         # Time mark
         if i == 0:
             time_mark = time.time()
@@ -158,33 +170,34 @@ def construct_dataset(dataset_type):
                                                          fft_max_arg_list=fft_max_arg,
                                                          mfcc_features_list=mfcc_features_list)
 
+        # Push into dataset
         if dataset_type == 0:
-            # Push into dataset
             dev_features_vector_list_dataset.append(features_vector_list)
+        elif dataset_type == 1:
+            test_features_vector_list_dataset.append(features_vector_list)
 
         if i == 0:
             print("Estimated time for constructing features vector list dataset:",
-                    str(round(time.time() - time_mark, 3) * len(audio_list)), "seconds...")
+                  str(round(time.time() - time_mark, 3) * len(audio_list)), "seconds...")
 
     print("----------------------------------------")
 
 
 if __name__ == '__main__':
-    # Construct dev dataset
-    construct_dataset(0)
-    # Reformat labels list
-    reformat_labels_list()
-    # print(dev_features_vector_list_dataset)
-    # print(labels_list)
-
-    print("Length of dev dataset:", len(dev_features_vector_list_dataset))
-    print("Length of dev labels list:", len(labels_list))
-
-    # Save data
-    # print("Saving data...")
+    # # Construct dev dataset, uncomment when reconstruction of dataset is needed
+    # construct_dataset(0)
+    # # Reformat labels list
+    # reformat_labels_list()
+    # print("Length of dev dataset:", len(dev_features_vector_list_dataset))
+    # # Save data, uncomment when reconstruction of dataset is needed
+    # print("Saving dev data...")
     # np.save("./input/features/dev_features.npy", dev_features_vector_list_dataset)
     # np.save("./input/labels/dev_labels.npy", labels_list)
 
-    # # Read data
-    # my_array = np.load("./input/features/dev_features.npy", allow_pickle=True)
-    # # print(my_array)
+    # Construct test dataset
+    construct_dataset(1)
+    print("Length of test dataset:", len(test_features_vector_list_dataset))
+    # Save data, uncomment when reconstruction of dataset is needed
+    print("Saving test data...")
+    np.save("./input/features/test_features.npy", test_features_vector_list_dataset)
+
