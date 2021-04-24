@@ -1,62 +1,66 @@
 import secrets
 from Project1.Utils import *
+import warnings
+import sklearn
+import joblib
+
+# Close warnings
+warnings.filterwarnings("ignore")
 
 # By default
-frame_size = 512  # 窗宽
-frame_shift = int(frame_size / 2)  # 窗移
-# preEmphasisAlpha = 0.97
-max_T_frame = int(frame_size / 2)  # 最大检测频率（检测基频
+frame_size = 512  # Width of window
+frame_shift = int(frame_size / 2)  # Shift of window
+sample_rate = 16000     # Sample rate
+
+
+# Reconstructed dev dataset of features vector list
+dev_features_vector_list_dataset = []
+# Reformatted dev labels vector
+labels_list = []
 
 # Secret generator
 secret_generator = secrets.SystemRandom()
 
+# Logistic Regression Model
+model = sklearn.linear_model.LogisticRegression()
+
 
 # Dev
 def dev_main():
-    global frame_size, frame_shift, max_T_frame
+    global dev_features_vector_list_dataset, labels_list
 
-    # Input
-    # audio, sample_rate, duration = get_input("./input/input.wav")
-    audio_list, sample_rate_list, duration_list, labels_list = get_input("../vad", 0)           # 0 for dev dataset
+    # Read features and labels
+    dev_features_vector_list_dataset = np.load("./input/features/dev_features.npy", allow_pickle=True)
+    labels_list = np.load("./input/labels/dev_labels.npy", allow_pickle=True)
 
-    # Calculate frame size to make the unit time in 10 ~ 30ms, here is 25ms
-    frame_size = int(30 * sample_rate_list[0] / 1000)
-    frame_shift = int(frame_size / 2)
-    max_T_frame = int(frame_size / 2)
-    print("Frame size:", frame_size)
+    # Model training: logistic regression
+    print("Begin model training...")
+    for i in range(len(dev_features_vector_list_dataset)):
+        if i % 10 == 0:
+            print("Iteration", str(i), "/", str(len(dev_features_vector_list_dataset)), "| Training accuracy score:", str(model.score(dev_features_vector_list_dataset[i], labels_list[i][1])))
+        model.fit(dev_features_vector_list_dataset[i], labels_list[i][1])
 
-    # Regularization
-    for i in range(len(audio_list)):
-        audio_list[i] = audio_list[i] / np.max(audio_list[i])
+    # Save model
+    print("Saving model...")
+    joblib.dump(model, "./model_save/model.pkl")
 
-    # Divide frames and add windows
-    ori_frames, frames, time_for_each_frame = divide_frames(audio, frame_size, frame_shift, duration)
-    # Random frame order
-    frame_order = secret_generator.randint(0, len(frames) - 1)
-    print("Random frame order:", frame_order)
-
-    # Fourier transform
-    # fft_signals, fft_x = fourier_transform(audio, frames, frame_size, frame_shift, sample_rate)
-    fft_max_arg = fourier_transform(audio, frames, frame_size, frame_shift, sample_rate)
-    # Calculate Short-term Energy
-    STE = generate_short_term_energy(frames)
-    # Calculate Zero-Crossing Rate
-    ZCR = cal_zero_crossing_rate(frames, audio, frame_size)
-    # # Calculate Self-Correlation
-    # SCC = self_correlation(audio, frame_size, frame_shift, sample_rate)
-    # Calculate MFCC
-    mfcc_features_list = cal_MFCC(frames, frame_size, sample_rate)
-    # # Draw results
-    # draw_time_domain_diagram(audio, energies, ori_frames[frame_order], frames[frame_order], ZCR, mfcc_features_list[frame_order][0], fft_signals[frame_order],
-    #                          fft_x)
-
-    # Construct the features vector list
-    features_vector_list = construct_features_vector(frames=frames, STE_list=STE, ZCR_list=ZCR, fft_max_arg_list=fft_max_arg, mfcc_features_list=mfcc_features_list)
+    # Read model
+    # print("Reading model...")
+    # my_model = joblib.load("./model_save/model.pkl")
+    # print(my_model.score(dev_features_vector_list_dataset[1], labels_list[1][1]))
+    # print(my_model.predict(dev_features_vector_list_dataset[1]))
 
 
 def main():
     # Dev
-    dev_main()
+    # dev_main()
+    global dev_features_vector_list_dataset, labels_list
+
+    # Read features and labels
+    dev_features_vector_list_dataset = np.load("./input/features/dev_features.npy", allow_pickle=True)
+    labels_list = np.load("./input/labels/dev_labels.npy", allow_pickle=True)
+    print("Length of dev dataset:", len(dev_features_vector_list_dataset))
+    print("Length of dev labels list:", len(labels_list))
 
 
 if __name__ == '__main__':

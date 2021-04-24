@@ -109,13 +109,11 @@ def get_input(dirPath, dataset_type):
                 break
         if is_inOrder:
             print("Successfully check the the order match of name between wav files and label!")
-
+        print("----------------------------------------")
         return np.array(audio_list), np.array(sample_rate_list), np.array(duration_list), np.array(labels_list)
     else:
         return np.array(audio_list), np.array(sample_rate_list), np.array(duration_list)
 
-    # audio, sample_rate = librosa.load(audioPath, sr=None, mono=True, offset=0.0)
-    #
     # duration = len(audio) * 1.0 / sample_rate
     # print("Input completed! Sample rate:", sample_rate, "| duration:", duration)
     # return audio, sample_rate, duration
@@ -138,7 +136,7 @@ def self_correlation(audio, frame_size, frame_shift, sample_rate):
     # Low pass
     f0_signal = signal.savgol_filter(f0_signal, 5, 2)
 
-    print("Calculation of fundamental frequency completed, totally " + str((round(time.process_time() - time_mark, 3))) + " seconds spent...")
+    # print("Calculation of fundamental frequency completed, totally " + str((round(time.process_time() - time_mark, 3))) + " seconds spent...")
 
     return np.array(f0_signal)
 
@@ -167,7 +165,7 @@ def build_windows(name='Hamming', N=1024):
     # Rectangle
     elif name == 'Rectangle':
         window = np.ones(N)
-    print("Build windows completed:", name)
+    # print("Build windows completed:", name)
 
     return window
 
@@ -189,8 +187,14 @@ def divide_frames(audio, frameSize, frameShift, duration):
         frames.append(np.array(frame))
     time_for_each_frame = duration / (len(frames) - (len(frames) - 1) * (frameShift / frameSize))
 
-    print("Divide frames completed! | frame amount", len(frames), "| frame size:", frameSize, "| frame shift:",
-          frameShift, "| time for each frame:", round(time_for_each_frame * 1000, 3), "ms")
+    # # Remove the last two elms in frames, may result in mismatch between label and wav
+    # frames.pop()
+    # frames.pop()
+    # ori_frames.pop()
+    # ori_frames.pop()
+
+    # print("Divide frames completed! | frame amount", len(frames), "| frame size:", frameSize, "| frame shift:",
+    #       frameShift, "| time for each frame:", round(time_for_each_frame * 1000, 3), "ms")
     return np.array(ori_frames), np.array(frames), time_for_each_frame
 
 
@@ -202,14 +206,14 @@ def generate_short_term_energy(frames):
         for j in range(0, len(frames[i]), 1):
             energy += pow(frames[i][j], 2)
         ret.append(energy)
-    print("Generation of short term energy completed!")
+    # print("Generation of short term energy completed!")
     return np.array(ret)
 
 
 # Calculate Zero-Crossing Rate (ZCR)
 def cal_zero_crossing_rate(frames, audio, frame_size):
     ret = librosa.feature.zero_crossing_rate(audio, frame_size, int(frame_size / 2))
-    print("Calculation of zero crossing rate completed!")
+    # print("Calculation of zero crossing rate completed!")
     # The shape of ret is (1, frame_amount)
     return ret[0]
 
@@ -220,8 +224,9 @@ def fourier_transform(audio, frames, frame_size, frame_shift, sampleRate):
     ret = []
     for i in range(len(frames)):
         spectrum.append(np.abs(
-            librosa.stft(frames[i], n_fft=frame_size, hop_length=frame_size + 1, win_length=None, window="hann")))
+            librosa.stft(frames[i], n_fft=frame_size, hop_length=frame_size + 1, win_length=frame_size, window="hann")))
 
+    # Abandon the last frame
     for i in range(len(frames)):
         # In x-axis, the real frequency = i * (sample rate / # of points in this frame)
         # the upper bound of the loop is int(sampleRate / 2) + 1
@@ -238,10 +243,10 @@ def cal_MFCC(frames, frame_size, sample_rate):
     ret = []
     for i in range(len(frames)):
         # 39 Dimensions MFCC
-        mfcc_features = librosa.feature.mfcc(frames[i], sr=sample_rate, S=None, n_mfcc=39, hop_length=frame_size + 1, dct_type=2, norm='ortho')
+        mfcc_features = librosa.feature.mfcc(frames[i], sr=sample_rate, S=None, n_mfcc=13, hop_length=frame_size + 1, dct_type=2, norm='ortho')
         mfcc_features = mfcc_features.reshape([1, -1])
         ret.append(mfcc_features)
-    print("Calculation of MFCC completed!")
+    # print("Calculation of MFCC completed!")
     return np.array(ret)
 
 
