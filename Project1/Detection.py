@@ -29,6 +29,7 @@ solver_name = "liblinear"
 # Solver="liblinear" is a good choice for small dataset
 model = sklearn.linear_model.LogisticRegression(penalty="l2", C=0.001, random_state=123, solver=solver_name)
 
+
 # Batch size
 # batch_size = 1024
 
@@ -92,7 +93,8 @@ def dev_main():
     idx_1, idx_2 = random_frame()
     idx_1 = 0
     acc_score = classifier.score(dev_features_vector_list_dataset[idx_1], labels_list[idx_1][1]) * 100
-    print("Model fitting completed, with solver in Logistic Regression is:", solver_name, "| Totally", str(round(time.time() - time_mark, 3)), "seconds spent...")
+    print("Model fitting completed, with solver in Logistic Regression is:", solver_name, "| Totally",
+          str(round(time.time() - time_mark, 3)), "seconds spent...")
     print("Accuracy (randomly choose a wav in dev dataset to test): %f%%" % acc_score)
 
     # count = 0
@@ -170,13 +172,6 @@ def test_main():
 
         predicted_voice_curve.append(voice_curve)
 
-    test_idx = 1
-
-    # plt.plot(predicted_result[0])
-    plt.plot(predicted_voice_curve[test_idx])
-    plt.savefig("./output/predict")
-    plt.show()
-
     # Top five wav files in sorted test dataset: '104-132091-0020.wav', '104-132091-0028.wav', '104-132091-0041.wav',
     #                                               '104-132091-0050.wav', '104-132091-0061.wav'
 
@@ -190,6 +185,18 @@ def test_main():
     wav_files = os.listdir("../vad/wavs/test")
     # Sort the names of wav file, note that when test the accuracy of prediction on test dataset!!!
     wav_files.sort()
+
+    print("----------------------------------------")
+    print("Begin random human test...")
+    # Randomly choose a wav file to perform human test
+    test_idx = secret_generator.randint(0, len(wav_files) - 1)
+    print("Wav file", test_idx, ":", wav_files[test_idx], "(Please search this file in ../vad/wavs/test,"
+                                                          " and make artificial judge between this wav and predicted curve)")  # Print file name
+    # plt.plot(predicted_result[0])
+    plt.plot(predicted_voice_curve[test_idx])
+    plt.savefig("./output/predict")
+    plt.show()
+
     for i in range(len(predicted_voice_curve)):
         message_line = []
         wav_id = wav_files[i].replace(".wav", "")
@@ -208,10 +215,11 @@ def test_main():
                 if begin_moment >= end_moment:
                     print("Error! begin_moment", str(begin_moment), "is no earlier than end_moment", str(end_moment))
 
-                message_line.append(str(round(float(begin_moment / 1000), 2)) + "," + str(round(float(end_moment / 1000), 2)))
+                message_line.append(
+                    str(round(float(begin_moment / 1000), 2)) + "," + str(round(float(end_moment / 1000), 2)))
             idx += 1
         # Transfer message line into correct format in string
-        str_message_line = message_line[0]          # Wav id
+        str_message_line = message_line[0]  # Wav id
         for j in range(1, len(message_line), 1):
             str_message_line = str_message_line + " " + message_line[j]
         final_result.append(str_message_line)
