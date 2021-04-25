@@ -225,7 +225,6 @@ def fourier_transform(audio, frames, frame_size, frame_shift, sampleRate):
         spectrum.append(np.abs(
             librosa.stft(frames[i], n_fft=frame_size, hop_length=frame_size + 1, win_length=frame_size, window="hann")))
 
-    # Abandon the last frame
     for i in range(len(frames)):
         # In x-axis, the real frequency = i * (sample rate / # of points in this frame)
         # the upper bound of the loop is int(sampleRate / 2) + 1

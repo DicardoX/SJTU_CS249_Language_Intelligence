@@ -16,6 +16,8 @@ time_unit = 30       # Time unit for each frame
 dev_features_vector_list_dataset = []
 # Reconstructed test dataset of features vector list
 test_features_vector_list_dataset = []
+# Reconstructed train dataset of features vector list
+train_features_vector_list_dataset = []
 # Reformatted dev labels vector
 labels_list = []
 
@@ -52,9 +54,10 @@ def update_labels(frame_labels, start_moment, end_moment):
 
 # Reformat label vector based on labels_list provided in construct_dataset()
 # Change the label into FRAME unit: 0 for not voice, 1 for voice
-def reformat_labels_list():
+# Data_type: 0 for dev, 2 for train
+def reformat_labels_list(data_type):
     global labels_list, frame_size, frame_shift, sample_rate, time_unit
-    global dev_features_vector_list_dataset
+    global dev_features_vector_list_dataset, train_features_vector_list_dataset
     tmp_labels_list = []
 
     print("Begin to reformat labels list...")
@@ -67,13 +70,17 @@ def reformat_labels_list():
     time_mark = time.process_time()
 
     # for i in range(10):
-    for i in range(len(labels_list)):
+    total_amount = len(labels_list) if data_type == 0 else 500
+    for i in range(total_amount):
         labels_vector = labels_list[i]
         # [0] for wav id, [1] for labels for each frame (a list)
         # tmp_labels_vector = [["wav id"], [0, 0, 0, 1, 1, ..., 0]]
         # Add wav id
         tmp_labels_vector = [str(labels_vector[0][0])]
-        frame_labels = [0 for j in range(len(dev_features_vector_list_dataset[i]))]
+        if data_type == 0:
+            frame_labels = [0 for j in range(len(dev_features_vector_list_dataset[i]))]
+        else:
+            frame_labels = [0 for j in range(len(train_features_vector_list_dataset[i]))]
 
         for j in range(1, len(labels_vector), 1):
             start_moment = float(labels_vector[j][0])
@@ -87,8 +94,13 @@ def reformat_labels_list():
         tmp_labels_list.append(tmp_labels_vector)
 
         if i == 0:
-            print("Estimated time for reformatting labels list:",
-                  str(round(time.process_time() - time_mark, 3) * len(dev_features_vector_list_dataset)), "seconds...")
+            if data_type == 0:
+                print("Estimated time for reformatting labels list:",
+                    str(round(time.process_time() - time_mark, 3) * len(dev_features_vector_list_dataset)), "seconds...")
+            else:
+                print("Estimated time for reformatting labels list:",
+                      str(round(time.process_time() - time_mark, 3) * len(train_features_vector_list_dataset)),
+                      "seconds...")
 
     # print(tmp_labels_list)
     # Update labels_list
@@ -125,7 +137,8 @@ def construct_dataset(dataset_type):
     # print("Frame size:", frame_size)
 
     # Total amount of samples
-    total_amount = len(audio_list)
+    # total_amount = len(audio_list)
+    total_amount = 500
 
     # Regularization
     for i in range(total_amount):
@@ -176,6 +189,8 @@ def construct_dataset(dataset_type):
             dev_features_vector_list_dataset.append(features_vector_list)
         elif dataset_type == 1:
             test_features_vector_list_dataset.append(features_vector_list)
+        else:
+            train_features_vector_list_dataset.append(features_vector_list)
 
         if i == 0:
             print("Estimated time for constructing features vector list dataset:",
@@ -185,20 +200,30 @@ def construct_dataset(dataset_type):
 
 
 if __name__ == '__main__':
-    # # Construct dev dataset, uncomment when reconstruction of dataset is needed
-    # construct_dataset(0)
-    # # Reformat labels list
-    # reformat_labels_list()
-    # print("Length of dev dataset:", len(dev_features_vector_list_dataset))
-    # # Save data, uncomment when reconstruction of dataset is needed
-    # print("Saving dev data...")
-    # np.save("./input/features/dev_features.npy", dev_features_vector_list_dataset)
-    # np.save("./input/labels/dev_labels.npy", labels_list)
-
-    # Construct test dataset
-    construct_dataset(1)
-    print("Length of test dataset:", len(test_features_vector_list_dataset))
+    # Construct dev dataset, uncomment when reconstruction of dataset is needed
+    construct_dataset(0)
+    # Reformat labels list
+    reformat_labels_list(0)
+    print("Length of dev dataset:", len(dev_features_vector_list_dataset))
     # Save data, uncomment when reconstruction of dataset is needed
-    print("Saving test data...")
-    np.save("./input/features/test_features.npy", test_features_vector_list_dataset)
+    print("Saving dev data...")
+    np.save("./input/features/dev_features.npy", dev_features_vector_list_dataset)
+    np.save("./input/labels/dev_labels.npy", labels_list)
+
+    # # Construct test dataset，uncomment when reconstruction of dataset is needed
+    # construct_dataset(1)
+    # print("Length of test dataset:", len(test_features_vector_list_dataset))
+    # # Save data, uncomment when reconstruction of dataset is needed
+    # print("Saving test data...")
+    # np.save("./input/features/test_features.npy", test_features_vector_list_dataset)
+
+    # # Construct train dataset，uncomment when reconstruction of dataset is needed
+    # construct_dataset(2)
+    # # Reformat labels list
+    # reformat_labels_list(2)
+    # print("Length of train dataset:", len(train_features_vector_list_dataset))
+    # # Save data, uncomment when reconstruction of dataset is needed
+    # print("Saving train data...")
+    # np.save("./input/features/train_features.npy", train_features_vector_list_dataset)
+    # np.save("./input/labels/train_labels.npy", labels_list)
 

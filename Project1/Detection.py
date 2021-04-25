@@ -18,6 +18,8 @@ from sklearn import metrics
 dev_features_vector_list_dataset = []
 # Reconstructed test dataset of features vector list
 test_features_vector_list_dataset = []
+# Reconstructed train dataset of features vector list
+train_features_vector_list_dataset = []
 # Reformatted dev labels vector
 labels_list = []
 
@@ -246,8 +248,8 @@ def test_main():
         for j in range(1, len(message_line), 1):
             str_message_line = str_message_line + " " + message_line[j]
         final_result.append(str_message_line)
-    # File operation
 
+    # File operation
     if os.path.exists(write_path):
         os.remove(write_path)
     f = open(write_path, "w")
@@ -257,11 +259,68 @@ def test_main():
     f.close()
 
 
+def train_main():
+    global train_features_vector_list_dataset, labels_list
+    predicted_result = []
+    predicted_voice_curve = []
+
+    print("----------------------------------------")
+    print("Begin evaluating on train dataset (only takes 500 wav files)...")
+    print("----------------------------------------")
+
+    # Read model
+    print("Reading model...")
+    print("----------------------------------------")
+    my_model = joblib.load("./model_save/model.pkl")
+
+    # Read features
+    print("Reading features and labels...")
+    train_features_vector_list_dataset = np.load("./input/features/train_features.npy", allow_pickle=True)
+    labels_list = np.load("./input/labels/train_labels.npy", allow_pickle=True)
+
+    print("Length of train features vector list:", len(train_features_vector_list_dataset))
+
+    # Time unit for each frame, need to be synchronized with time_unit in data_construction.py
+    time_unit = 30
+    # Time shift
+    time_shift = int(time_unit / 2)
+
+    # Predict
+    print("Predicting labels on train dataset...")
+    auc_score = 0
+    eer_score = 0
+
+    for i in range(len(train_features_vector_list_dataset)):
+        if i % 100 == 0 and i != 0:
+            print("Iteration:", str(i), "/", str(len(train_features_vector_list_dataset)),
+                  "rounds | Current average AUC:", float(auc_score / i), "| Current average EER:", float(eer_score / i))
+        voice_prob = my_model.predict_proba(train_features_vector_list_dataset[i])
+        pred_Y = []
+        for j in range(len(voice_prob)):
+            pred_Y.append(voice_prob[j][1])
+
+        # Smooth the predicted curve: Median filter
+        pred_Y = signal.medfilt(pred_Y, kernel_size=filter_size)
+        # Normalized the predicted voice curve into 0 / 1 array
+        for j in range(len(pred_Y)):
+            pred_Y[j] = 1 if pred_Y[j] > voice_threshold else 0
+
+        label_Y = labels_list[i][1]
+        cur_auc, cur_eer = get_metrics(pred_Y, label_Y)
+        auc_score += cur_auc
+        eer_score += cur_eer
+
+    print("Average AUC Score:", float(auc_score / len(train_features_vector_list_dataset)), "| Average ERR Score:", float(eer_score / len(train_features_vector_list_dataset)))
+
+
 def main():
     # Dev main, if you don't want to run developing method (model train and evaluate), just comment it!
     dev_main()
     # # Test main, if you don't want to run testing method (generate predictions on test dataset), just comment it!
     # test_main()
+    # # Train main, only for local test for AUC and ERR (since it's not used in task 1),
+    # # just comment it if you don't want to evaluate the model on train dataset!
+    # train_main()
 
 
 if __name__ == '__main__':
