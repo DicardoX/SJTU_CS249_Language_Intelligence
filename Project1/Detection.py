@@ -8,6 +8,8 @@ import secrets
 import time
 from scipy import signal
 import os
+from evaluate import get_metrics
+from sklearn import metrics
 
 # Close warnings
 # warnings.filterwarnings("ignore")
@@ -29,18 +31,10 @@ solver_name = "liblinear"
 # Solver="liblinear" is a good choice for small dataset
 model = sklearn.linear_model.LogisticRegression(penalty="l2", C=0.001, random_state=123, solver=solver_name)
 
-
-# Batch size
-# batch_size = 1024
-
-
-# Randomly choose a frame
-def random_frame():
-    # Randomly choose an index for wav
-    idx_1 = secret_generator.randint(0, len(dev_features_vector_list_dataset) - 1)
-    # Randomly choose an index for frame
-    idx_2 = secret_generator.randint(0, len(dev_features_vector_list_dataset[idx_1]) - 1)
-    return idx_1, idx_2
+# Filter size
+filter_size = 17
+# Threshold
+voice_threshold = 0.83
 
 
 # Generate batch, put all frames together into a batch
@@ -53,19 +47,76 @@ def generate_batch():
         for j in range(len(dev_features_vector_list_dataset[i])):
             batch.append(dev_features_vector_list_dataset[i][j])
             label.append(labels_list[i][1][j])
-
-    # for i in range(batch_size):
-    #     # Randomly choose a frame
-    #     idx_1, idx_2 = random_frame()
-    #     # Add into batch and label list
-    #     batch.append(dev_features_vector_list_dataset[idx_1][idx_2])
-    #     label.append(labels_list[idx_1][1][idx_2])
     return batch, label
+
+
+# Evaluate by using get_metrics() in evaluate.py
+def evaluate_dev():
+    global dev_features_vector_list_dataset, labels_list
+    global model
+    print("----------------------------------------")
+    print("Evaluating labels on dev dataset by using get_metrics() in evaluate.py...")
+
+    # Predict
+    auc_score = 0
+    eer_score = 0
+    for i in range(len(dev_features_vector_list_dataset)):
+        if i % 100 == 0 and i != 0:
+            print("Iteration:", str(i), "/", str(len(dev_features_vector_list_dataset)),
+                  "rounds | Current average AUC:", float(auc_score / i), "| Current average EER:", float(eer_score / i))
+        voice_prob = model.predict_proba(dev_features_vector_list_dataset[i])
+        pred_Y = []
+        for j in range(len(voice_prob)):
+            pred_Y.append(voice_prob[j][1])
+
+        # Smooth the predicted curve: Median filter
+        pred_Y = signal.medfilt(pred_Y, kernel_size=filter_size)
+        # Normalized the predicted voice curve into 0 / 1 array
+        for j in range(len(pred_Y)):
+            pred_Y[j] = 1 if pred_Y[j] > voice_threshold else 0
+
+        label_Y = labels_list[i][1]
+        cur_auc, cur_eer = get_metrics(pred_Y, label_Y)
+        auc_score += cur_auc
+        eer_score += cur_eer
+
+        # Plot the ROC curve of the first and last wav file
+        if i == 0:
+            metrics.plot_roc_curve(model, dev_features_vector_list_dataset[i], label_Y)
+            plt.savefig("./output/roc_curve_1")
+            plt.show()
+        if i == len(dev_features_vector_list_dataset) - 1:
+            metrics.plot_roc_curve(model, dev_features_vector_list_dataset[i], label_Y)
+            plt.savefig("./output/roc_curve_2")
+            plt.show()
+
+    return float(auc_score / len(dev_features_vector_list_dataset)), float(eer_score / len(dev_features_vector_list_dataset))
+
+
+# Train model
+def model_train(dev_X, dev_Y):
+    global model
+
+    # Model training: logistic regression
+    print("----------------------------------------")
+    print("Begin model training...")
+
+    # Time mark
+    time_mark = time.time()
+    # Fit model
+    model = model.fit(dev_X, dev_Y)
+
+    return time_mark
 
 
 # Dev
 def dev_main():
     global dev_features_vector_list_dataset, labels_list
+    global model
+
+    print("----------------------------------------")
+    print("Begin developing...")
+    print("----------------------------------------")
 
     # Read features and labels
     print("Reading features and labels...")
@@ -75,48 +126,22 @@ def dev_main():
     print("Length of dev dataset:", len(dev_features_vector_list_dataset))
     print("Length of dev labels list:", len(labels_list))
 
-    # Model training: logistic regression
-    print("----------------------------------------")
-    print("Begin model training...")
-
     # Get batch, which combines all frames together
     dev_X, dev_Y = generate_batch()
-    print("Length of dev_X:", len(dev_X))
-    print("Length of dev_Y:", len(dev_Y))
+    print("Length of dev_X for model training:", len(dev_X))
+    print("Length of dev_Y for model training:", len(dev_Y))
 
-    # Time mark
-    time_mark = time.time()
-    # Fit model
-    classifier = model.fit(dev_X, dev_Y)
+    # Model training, if you don't want to train this model again, just comment it!
+    time_mark = model_train(dev_X, dev_Y)
 
-    # Accuracy
-    idx_1, idx_2 = random_frame()
-    idx_1 = 0
-    acc_score = classifier.score(dev_features_vector_list_dataset[idx_1], labels_list[idx_1][1]) * 100
+    # Evaluate by using get_metrics() in evaluate.py, if you don't want to evaluate this model this time, just comment it!
+    avg_auc, avg_eer = evaluate_dev()
     print("Model fitting completed, with solver in Logistic Regression is:", solver_name, "| Totally",
           str(round(time.time() - time_mark, 3)), "seconds spent...")
-    print("Accuracy (randomly choose a wav in dev dataset to test): %f%%" % acc_score)
+    print("Average AUC Score:", avg_auc, "| Average ERR Score:", avg_eer)
 
-    # count = 0
-    # total_times = 5000
-    # while count < total_times:
-    #     count += 1
-    #     # Randomly generate a batch
-    #     dev_X, dev_Y = generate_batch()
-    #     # Fit model
-    #     model.fit(dev_X, dev_Y)
-    #     # Info
-    #     if count % 100 == 0:
-    #         # Randomly choose a frame to test accuracy
-    #         idx_1, idx_2 = random_frame()
-    #         acc_score = model.score(dev_features_vector_list_dataset[idx_1], labels_list[idx_1][1])
-    #         print("Iteration", str(count), "/", str(total_times), "| Training accuracy score:",
-    #               str(acc_score))
-    #         print(model.coef_)
-    #         # Push into list
-    #         accuracy_list.append(acc_score)
-
-    # Save model
+    # Save model, if you don't want to save this model this time, just comment it!
+    print("----------------------------------------")
     print("Saving model...")
     joblib.dump(model, "./model_save/model.pkl")
 
@@ -128,44 +153,41 @@ def test_main():
     predicted_result = []
     predicted_voice_curve = []
 
-    # Read model
     print("----------------------------------------")
+    print("Begin testing...")
+    print("----------------------------------------")
+
+    # Read model
     print("Reading model...")
     print("----------------------------------------")
     my_model = joblib.load("./model_save/model.pkl")
 
     # Read features
     print("Reading features and labels...")
-    print("----------------------------------------")
     test_features_vector_list_dataset = np.load("./input/features/test_features.npy", allow_pickle=True)
 
     print("Length of test features vector list:", len(test_features_vector_list_dataset))
 
-    # Filter size
-    filter_size = 23
-    # Threshold
-    voice_threshold = 0.7
     # Time unit for each frame, need to be synchronized with time_unit in data_construction.py
     time_unit = 30
     # Time shift
     time_shift = int(time_unit / 2)
 
     # Predict
+    print("----------------------------------------")
     print("Predicting labels on test dataset...")
     for i in range(len(test_features_vector_list_dataset)):
         if i % 100 == 0:
             print("Iteration:", str(i), "/", str(len(test_features_vector_list_dataset)), "rounds")
         my_predict = my_model.predict_proba(test_features_vector_list_dataset[i])
         predicted_result.append(my_predict)
-
         voice_curve = []
         for j in range(len(predicted_result[i])):
-            # Curve 2 represents the voice! 1 for speaking, 0 for not speaking
+            # Curve[1] represents the voice! 1 for speaking, 0 for not speaking
             voice_curve.append(predicted_result[i][j][1])
 
         # Smooth the predicted voice curve: Median filter
         voice_curve = signal.medfilt(voice_curve, kernel_size=filter_size)
-
         # Normalized the predicted voice curve into 0 / 1 array
         for j in range(len(voice_curve)):
             voice_curve[j] = 1 if voice_curve[j] > voice_threshold else 0
@@ -191,7 +213,8 @@ def test_main():
     # Randomly choose a wav file to perform human test
     test_idx = secret_generator.randint(0, len(wav_files) - 1)
     print("Wav file", test_idx, ":", wav_files[test_idx], "(Please search this file in ../vad/wavs/test,"
-                                                          " and make artificial judge between this wav and predicted curve)")  # Print file name
+                                                          " and make artificial judge between this wav figure and predicted curve)")  # Print file name
+    print("----------------------------------------")
     # plt.plot(predicted_result[0])
     plt.plot(predicted_voice_curve[test_idx])
     plt.savefig("./output/predict")
@@ -235,10 +258,10 @@ def test_main():
 
 
 def main():
-    # # Dev main
-    # dev_main()
-    # Test main
-    test_main()
+    # Dev main, if you don't want to run developing method (model train and evaluate), just comment it!
+    dev_main()
+    # # Test main, if you don't want to run testing method (generate predictions on test dataset), just comment it!
+    # test_main()
 
 
 if __name__ == '__main__':
