@@ -70,8 +70,6 @@ def get_input(dirPath, dataset_type):
     # Sort the file
     wav_files.sort()
 
-    print(wav_files)
-
     # Traverse the wave
     for i in range(len(wav_files)):
         audio_path = wav_dirPath + "/" + wav_files[i]

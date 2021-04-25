@@ -10,6 +10,7 @@ warnings.filterwarnings("ignore")
 frame_size = 512  # Width of window
 frame_shift = int(frame_size / 2)  # Shift of window
 sample_rate = 16000  # Sample rate
+time_unit = 30       # Time unit for each frame
 
 # Reconstructed dev dataset of features vector list
 dev_features_vector_list_dataset = []
@@ -23,8 +24,8 @@ secret_generator = secrets.SystemRandom()
 
 
 # Update labels
-def update_labels(frame_labels, start_moment, end_moment, time_unit):
-    global frame_size, frame_shift, sample_rate
+def update_labels(frame_labels, start_moment, end_moment):
+    global frame_size, frame_shift, sample_rate, time_unit
     # How to calculate teh start frame idx or end frame idx? Let t = frame_shift, k = frame_size
     # Answer: start point for each frame: 0, t, 2t, ..., nt
     #         end point for each frame: k, k+t, k+2t, ..., k+nt
@@ -52,7 +53,7 @@ def update_labels(frame_labels, start_moment, end_moment, time_unit):
 # Reformat label vector based on labels_list provided in construct_dataset()
 # Change the label into FRAME unit: 0 for not voice, 1 for voice
 def reformat_labels_list():
-    global labels_list, frame_size, frame_shift, sample_rate
+    global labels_list, frame_size, frame_shift, sample_rate, time_unit
     global dev_features_vector_list_dataset
     tmp_labels_list = []
 
@@ -77,7 +78,7 @@ def reformat_labels_list():
         for j in range(1, len(labels_vector), 1):
             start_moment = float(labels_vector[j][0])
             end_moment = float(labels_vector[j][1])
-            update_labels(frame_labels, start_moment, end_moment, time_unit)
+            update_labels(frame_labels, start_moment, end_moment)
         # print(len(frame_labels))
         # plt.plot(frame_labels)
         # plt.show()
@@ -119,7 +120,7 @@ def construct_dataset(dataset_type):
         audio_list, sample_rate_list, duration_list, labels_list = get_input("../vad", 2)  # 2 for train dataset
 
     # Calculate frame size to make the unit time in 10 ~ 30ms, here is 25ms
-    frame_size = int(30 * sample_rate_list[0] / 1000)
+    frame_size = int(time_unit * sample_rate_list[0] / 1000)
     frame_shift = int(frame_size / 2)
     # print("Frame size:", frame_size)
 
@@ -131,8 +132,8 @@ def construct_dataset(dataset_type):
         audio_list[i] = audio_list[i] / np.max(audio_list[i])
 
     # Construct the features vector list
-    for i in range(10):
-    # for i in range(total_amount):
+    # for i in range(10):
+    for i in range(total_amount):
         # Time mark
         if i == 0:
             time_mark = time.time()

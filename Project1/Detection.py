@@ -6,6 +6,8 @@ import joblib
 from matplotlib import pyplot as plt
 import secrets
 import time
+from scipy import signal
+import os
 
 # Close warnings
 # warnings.filterwarnings("ignore")
@@ -122,35 +124,106 @@ def test_main():
     global test_features_vector_list_dataset
     # Predicted result
     predicted_result = []
+    predicted_voice_curve = []
 
     # Read model
+    print("----------------------------------------")
     print("Reading model...")
+    print("----------------------------------------")
     my_model = joblib.load("./model_save/model.pkl")
 
     # Read features
     print("Reading features and labels...")
+    print("----------------------------------------")
     test_features_vector_list_dataset = np.load("./input/features/test_features.npy", allow_pickle=True)
 
-    # Predict
-    for i in range(10):
-        predicted_result.append(my_model.predict_proba(test_features_vector_list_dataset[i]))
+    print("Length of test features vector list:", len(test_features_vector_list_dataset))
 
-    curve_1 = []
-    curve_2 = []
-    test_idx = 4
-    for i in range(len(predicted_result[test_idx])):
-        curve_1.append(predicted_result[test_idx][i][0])
-        curve_2.append(predicted_result[test_idx][i][1])
+    # Filter size
+    filter_size = 23
+    # Threshold
+    voice_threshold = 0.7
+    # Time unit for each frame, need to be synchronized with time_unit in data_construction.py
+    time_unit = 30
+    # Time shift
+    time_shift = int(time_unit / 2)
+
+    # Predict
+    print("Predicting labels on test dataset...")
+    for i in range(len(test_features_vector_list_dataset)):
+        if i % 100 == 0:
+            print("Iteration:", str(i), "/", str(len(test_features_vector_list_dataset)), "rounds")
+        my_predict = my_model.predict_proba(test_features_vector_list_dataset[i])
+        predicted_result.append(my_predict)
+
+        voice_curve = []
+        for j in range(len(predicted_result[i])):
+            # Curve 2 represents the voice! 1 for speaking, 0 for not speaking
+            voice_curve.append(predicted_result[i][j][1])
+
+        # Smooth the predicted voice curve: Median filter
+        voice_curve = signal.medfilt(voice_curve, kernel_size=filter_size)
+
+        # Normalized the predicted voice curve into 0 / 1 array
+        for j in range(len(voice_curve)):
+            voice_curve[j] = 1 if voice_curve[j] > voice_threshold else 0
+
+        predicted_voice_curve.append(voice_curve)
+
+    test_idx = 1
 
     # plt.plot(predicted_result[0])
-    plt.plot(curve_2)
+    plt.plot(predicted_voice_curve[test_idx])
     plt.savefig("./output/predict")
     plt.show()
 
     # Top five wav files in sorted test dataset: '104-132091-0020.wav', '104-132091-0028.wav', '104-132091-0041.wav',
     #                                               '104-132091-0050.wav', '104-132091-0061.wav'
 
-    # print(model.predict_proba(test_X))
+    # Write
+    write_path = "./output/test_prediction.txt"
+    print("----------------------------------------")
+    print("Writing result into path: \"" + write_path + "\" ...")
+    final_result = []
+    wav_files = []
+    # Get the names of wav file
+    wav_files = os.listdir("../vad/wavs/test")
+    # Sort the names of wav file, note that when test the accuracy of prediction on test dataset!!!
+    wav_files.sort()
+    for i in range(len(predicted_voice_curve)):
+        message_line = []
+        wav_id = wav_files[i].replace(".wav", "")
+        # Add wav id into message line
+        message_line.append(wav_id)
+
+        idx = 0
+        while idx < len(predicted_voice_curve[i]):
+            if predicted_voice_curve[i][idx] == 1:
+                # Transform the predicted voice curve from frame-based into microsecond based
+                begin_frame_idx = idx
+                while idx < len(predicted_voice_curve[i]) - 1 and predicted_voice_curve[i][idx + 1] == 1:
+                    idx += 1
+                begin_moment = begin_frame_idx * time_shift
+                end_moment = time_unit + idx * time_shift
+                if begin_moment >= end_moment:
+                    print("Error! begin_moment", str(begin_moment), "is no earlier than end_moment", str(end_moment))
+
+                message_line.append(str(round(float(begin_moment / 1000), 2)) + "," + str(round(float(end_moment / 1000), 2)))
+            idx += 1
+        # Transfer message line into correct format in string
+        str_message_line = message_line[0]          # Wav id
+        for j in range(1, len(message_line), 1):
+            str_message_line = str_message_line + " " + message_line[j]
+        final_result.append(str_message_line)
+    # File operation
+
+    if os.path.exists(write_path):
+        os.remove(write_path)
+    f = open(write_path, "w")
+    for i in range(len(final_result)):
+        f.writelines(final_result[i])
+        f.write("\n")
+    f.close()
 
 
 def main():
