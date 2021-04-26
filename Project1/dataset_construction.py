@@ -118,34 +118,35 @@ def construct_dataset(dataset_type):
         print("----------------------------------------")
         # Input
         audio_list, sample_rate_list, duration_list, labels_list = get_input("../vad", 0)  # 0 for dev dataset
+        # Total amount of samples
+        total_amount = len(audio_list)
     elif dataset_type == 1:
         print("----------------------------------------")
         print("Begin to construct test dataset...")
         print("----------------------------------------")
         # Input
         audio_list, sample_rate_list, duration_list = get_input("../vad", 1)  # 1 for test dataset
+        # Total amount of samples
+        total_amount = len(audio_list)
     else:
         print("----------------------------------------")
         print("Begin to construct train dataset...")
         print("----------------------------------------")
         # Input
         audio_list, sample_rate_list, duration_list, labels_list = get_input("../vad", 2)  # 2 for train dataset
+        # Total amount of samples
+        total_amount = 500
 
     # Calculate frame size to make the unit time in 10 ~ 30ms, here is 25ms
     frame_size = int(time_unit * sample_rate_list[0] / 1000)
     frame_shift = int(frame_size / 2)
     # print("Frame size:", frame_size)
 
-    # Total amount of samples
-    # total_amount = len(audio_list)
-    total_amount = 500
-
     # Regularization
     for i in range(total_amount):
         audio_list[i] = audio_list[i] / np.max(audio_list[i])
 
     # Construct the features vector list
-    # for i in range(10):
     for i in range(total_amount):
         # Time mark
         if i == 0:
@@ -159,13 +160,7 @@ def construct_dataset(dataset_type):
 
         # Divide frames and add windows
         ori_frames, frames, time_for_each_frame = divide_frames(audio, frame_size, frame_shift, duration)
-
-        # Random frame order
-        frame_order = secret_generator.randint(0, len(frames) - 1)
-        # print("Random frame order:", frame_order)
-
         # Fourier transform
-        # fft_signals, fft_x = fourier_transform(audio, frames, frame_size, frame_shift, sample_rate)
         fft_max_arg = fourier_transform(audio, frames, frame_size, frame_shift, sample_rate)
         # Calculate Short-term Energy
         STE = generate_short_term_energy(frames)

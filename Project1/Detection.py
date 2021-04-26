@@ -1,4 +1,3 @@
-import secrets
 from Project1.Utils import *
 import warnings
 import sklearn
@@ -102,12 +101,10 @@ def model_train(dev_X, dev_Y):
     # Model training: logistic regression
     print("----------------------------------------")
     print("Begin model training...")
-
     # Time mark
     time_mark = time.time()
     # Fit model
     model = model.fit(dev_X, dev_Y)
-
     return time_mark
 
 
@@ -201,12 +198,14 @@ def test_main():
 
     # Write
     write_path = "./output/test_prediction.txt"
+    # write_path = "./output/train_prediction.txt"
     print("----------------------------------------")
     print("Writing result into path: \"" + write_path + "\" ...")
     final_result = []
     wav_files = []
     # Get the names of wav file
     wav_files = os.listdir("../vad/wavs/test")
+    # wav_files = os.listdir("../vad/wavs/train")
     # Sort the names of wav file, note that when test the accuracy of prediction on test dataset!!!
     wav_files.sort()
 
@@ -314,19 +313,68 @@ def train_main():
         auc_score += cur_auc
         eer_score += cur_eer
 
+        predicted_voice_curve.append(pred_Y)
+
     print("Average AUC Score:", float(auc_score / len(train_features_vector_list_dataset)), "| Average ERR Score:", float(eer_score / len(train_features_vector_list_dataset)))
+
+    # Write
+    write_path = "./output/train_prediction.txt"
+    print("----------------------------------------")
+    print("Writing result into path: \"" + write_path + "\" ...")
+    final_result = []
+    wav_files = []
+    # Get the names of wav file
+    wav_files = os.listdir("../vad/wavs/train")
+    # Sort the names of wav file, note that when test the accuracy of prediction on test dataset!!!
+    wav_files.sort()
+
+    for i in range(len(predicted_voice_curve)):
+        message_line = []
+        wav_id = wav_files[i].replace(".wav", "")
+        # Add wav id into message line
+        message_line.append(wav_id)
+
+        idx = 0
+        while idx < len(predicted_voice_curve[i]):
+            if predicted_voice_curve[i][idx] == 1:
+                # Transform the predicted voice curve from frame-based into microsecond based
+                begin_frame_idx = idx
+                while idx < len(predicted_voice_curve[i]) - 1 and predicted_voice_curve[i][idx + 1] == 1:
+                    idx += 1
+                begin_moment = begin_frame_idx * time_shift
+                end_moment = time_unit + idx * time_shift
+                if begin_moment >= end_moment:
+                    print("Error! begin_moment", str(begin_moment), "is no earlier than end_moment", str(end_moment))
+
+                message_line.append(
+                    str(round(float(begin_moment / 1000), 2)) + "," + str(round(float(end_moment / 1000), 2)))
+            idx += 1
+        # Transfer message line into correct format in string
+        str_message_line = message_line[0]  # Wav id
+        for j in range(1, len(message_line), 1):
+            str_message_line = str_message_line + " " + message_line[j]
+        final_result.append(str_message_line)
+
+    # File operation
+    if os.path.exists(write_path):
+        os.remove(write_path)
+    f = open(write_path, "w")
+    for i in range(len(final_result)):
+        f.writelines(final_result[i])
+        f.write("\n")
+    f.close()
 
 
 def main():
     # # Dev main, if you don't want to run developing method (model train and evaluate), just comment it!
     # dev_main()
 
-    # Test main, if you don't want to run testing method (generate predictions on test dataset), just comment it!
-    test_main()
+    # # Test main, if you don't want to run testing method (generate predictions on test dataset), just comment it!
+    # test_main()
 
-    # # Train main, only for local test for AUC and ERR (since it's not used in task 1),
-    # # just comment it if you don't want to evaluate the model on train dataset!
-    # train_main()
+    # Train main, only for local test for AUC and ERR (since it's not used in task 1),
+    # just comment it if you don't want to evaluate the model on train dataset!
+    train_main()
 
 
 if __name__ == '__main__':
