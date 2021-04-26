@@ -315,7 +315,7 @@ def train_main():
 
         predicted_voice_curve.append(pred_Y)
 
-    print("Average AUC Score:", float(auc_score / len(train_features_vector_list_dataset)), "| Average ERR Score:", float(eer_score / len(train_features_vector_list_dataset)))
+    print("Average AUC Score:", float(auc_score / len(train_features_vector_list_dataset)), "| Average EER Score:", float(eer_score / len(train_features_vector_list_dataset)))
 
     # Write
     write_path = "./output/train_prediction.txt"

@@ -6,6 +6,7 @@ from evaluate import get_metrics
 # Label path
 label_path = "../vad/data/train_label.txt"
 labels_list = read_label_from_file(label_path, frame_size=0.03, frame_shift=0.015)
+# Sort by keys
 labels_list = sorted(labels_list.items(), key=lambda d: d[0])
 for i in range(len(labels_list)):
     labels_list[i] = labels_list[i][1]
@@ -13,6 +14,7 @@ for i in range(len(labels_list)):
 # Prediction path
 pred_path = "./output/train_prediction.txt"
 pred_list = read_label_from_file(pred_path, frame_size=0.03, frame_shift=0.015)
+# Sort by keys
 pred_list = sorted(pred_list.items(), key=lambda d: d[0])
 for i in range(len(pred_list)):
     pred_list[i] = pred_list[i][1]
