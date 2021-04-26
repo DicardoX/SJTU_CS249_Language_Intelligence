@@ -214,8 +214,8 @@ def test_main():
     print("Begin random human test...")
     # Randomly choose a wav file to perform human test
     test_idx = secret_generator.randint(0, len(wav_files) - 1)
-    print("Wav file", test_idx, ":", wav_files[test_idx], "(Please search this file in ../vad/wavs/test,"
-                                                          " and make artificial judge between this wav figure and predicted curve)")  # Print file name
+    print("Wav file", test_idx, ":", wav_files[test_idx], "(Please search this file in ../vad/wavs/test,")
+    print(" and make artificial judge between this wav figure and predicted curve)")        # Print file name
     print("----------------------------------------")
     # plt.plot(predicted_result[0])
     plt.plot(predicted_voice_curve[test_idx])
@@ -303,6 +303,10 @@ def train_main():
         pred_Y = signal.medfilt(pred_Y, kernel_size=filter_size)
         # Normalized the predicted voice curve into 0 / 1 array
         for j in range(len(pred_Y)):
+            if pred_Y[j] == 0:
+                # Silence State
+                continue
+            # Speech or Noise State
             pred_Y[j] = 1 if pred_Y[j] > voice_threshold else 0
 
         label_Y = labels_list[i][1]
@@ -314,10 +318,12 @@ def train_main():
 
 
 def main():
-    # Dev main, if you don't want to run developing method (model train and evaluate), just comment it!
-    dev_main()
-    # # Test main, if you don't want to run testing method (generate predictions on test dataset), just comment it!
-    # test_main()
+    # # Dev main, if you don't want to run developing method (model train and evaluate), just comment it!
+    # dev_main()
+
+    # Test main, if you don't want to run testing method (generate predictions on test dataset), just comment it!
+    test_main()
+
     # # Train main, only for local test for AUC and ERR (since it's not used in task 1),
     # # just comment it if you don't want to evaluate the model on train dataset!
     # train_main()
