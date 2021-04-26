@@ -1,4 +1,4 @@
-# Test.py
+# Test_AUC_EER_Score.py
 
 from vad_utils import read_label_from_file
 from evaluate import get_metrics
