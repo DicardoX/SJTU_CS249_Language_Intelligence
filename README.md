@@ -4,6 +4,10 @@
 
 [python如何 FFT(快速傅里叶变换) 求幅度、频率（超详细 含推导过程）](https://blog.csdn.net/weixin_39591031/article/details/110392352) 
 
+[高斯混合模型（GMM）及其EM算法的理解](https://blog.csdn.net/jinping_shi/article/details/59613054/)
+
+[Scikit-Learn学习笔记——高斯混合模型(GMM)应用：分类、密度估计、生成模型](https://blog.csdn.net/jasonzhoujx/article/details/81947663)
+
 -------------
 
 ## 1. 清音段、浊音段和过渡段
@@ -63,4 +67,8 @@
 - 直流分量以外的分量所对应的信号振幅为**当前值/（采样点数N / 2）**
 
 ------
+
+### 7.高斯混合模型 *GMM* 及其 *EM* 算法
+
+​	[Ref](https://blog.csdn.net/jinping_shi/article/details/59613054/)
 
