@@ -10,8 +10,10 @@
 # - 6. Cal_zero_crossing_rate(frames): Calculate Zero-Crossing Rate (ZCR)                         #
 # - 7. Fourier_transform(audio): Fast Fourier transform (per frame)                               #
 # - 8. Cal_MFCC(frames, frame_size, sample_rate): MFCC (Mel-frequency Cepstral Coefficients)      #
-# - 9. Construct_features_vector(frames, STE_list, ZCR_list, fft_max_arg_list,                    #
-#       mfcc_features_list): Construct the features vector                                        #
+# - 9. Perceptual_linear_predictive(frames, frame_size, frame_shift, sample_rate): Calculate PLP  #
+#      (perceptual linear predictive) coefficients (top 15)                                       #
+# - 10. Construct_features_vector(frames, STE_list, ZCR_list, fft_max_arg_list,                   #
+#      mfcc_features_list): Construct the features vector                                         #
 ###################################################################################################
 
 
@@ -22,22 +24,9 @@ import librosa
 import time
 from scipy import signal
 
-# Detected frequency range
-f_min = 1
-f_max = 600
-
 # Fundamental frequency range
 f_human_min = 80
 f_human_max = 500
-
-
-# Import the input source, audio(音频，np.array), sampleRate(采样率), duration(时长(s))
-# def get_input(audioPath):
-#     audio, sample_rate = librosa.load(audioPath, sr=None, mono=True, offset=0.0)
-#
-#     duration = len(audio) * 1.0 / sample_rate
-#     print("Input completed! Sample rate:", sample_rate, "| duration:", duration)
-#     return audio, sample_rate, duration
 
 
 # Get the dataset
@@ -113,43 +102,6 @@ def get_input(dirPath, dataset_type):
     else:
         return np.array(audio_list), np.array(sample_rate_list), np.array(duration_list)
 
-    # duration = len(audio) * 1.0 / sample_rate
-    # print("Input completed! Sample rate:", sample_rate, "| duration:", duration)
-    # return audio, sample_rate, duration
-
-
-# Self-Correlation
-# Return the array and the basic frequency
-def self_correlation(audio, frame_size, frame_shift, sample_rate):
-    print("Begin Self Correlation...")
-
-    # Time mark
-    time_mark = time.process_time()
-
-    f0_signal = librosa.yin(audio, fmin=f_min, fmax=f_max, sr=sample_rate, frame_length=len(audio), win_length=frame_size,
-                            hop_length=frame_shift)
-
-    # Smooth
-    # Median filter
-    f0_signal = signal.medfilt(f0_signal, 5)
-    # Low pass
-    f0_signal = signal.savgol_filter(f0_signal, 5, 2)
-
-    # print("Calculation of fundamental frequency completed, totally " + str((round(time.process_time() - time_mark, 3))) + " seconds spent...")
-
-    return np.array(f0_signal)
-
-    # ret = []
-    # for l in range(0, maxT, 1):
-    #     tmp_sum = 0
-    #     for j in range(0, len(frame) - l, 1):
-    #         tmp_sum += frame[j + l] * frame[j]
-    #     ret.append(tmp_sum)
-    # print("Self Correlation completed, begin calculate the basic frequency...")
-    # # Get the peak of the curve, note that it is in FRAME unit!
-
-    # return ret
-
 
 # Implement Window: Rectangle/Hanning/Hamming, N is window length
 def build_windows(name='Hamming', N=1024):
@@ -164,7 +116,6 @@ def build_windows(name='Hamming', N=1024):
     # Rectangle
     elif name == 'Rectangle':
         window = np.ones(N)
-    # print("Build windows completed:", name)
 
     return window
 
@@ -186,14 +137,6 @@ def divide_frames(audio, frameSize, frameShift, duration):
         frames.append(np.array(frame))
     time_for_each_frame = duration / (len(frames) - (len(frames) - 1) * (frameShift / frameSize))
 
-    # # Remove the last two elms in frames, may result in mismatch between label and wav
-    # frames.pop()
-    # frames.pop()
-    # ori_frames.pop()
-    # ori_frames.pop()
-
-    # print("Divide frames completed! | frame amount", len(frames), "| frame size:", frameSize, "| frame shift:",
-    #       frameShift, "| time for each frame:", round(time_for_each_frame * 1000, 3), "ms")
     return np.array(ori_frames), np.array(frames), time_for_each_frame
 
 
@@ -244,82 +187,170 @@ def cal_MFCC(frames, frame_size, sample_rate):
         mfcc_features = librosa.feature.mfcc(frames[i], sr=sample_rate, S=None, n_mfcc=13, hop_length=frame_size + 1, dct_type=2, norm='ortho')
         mfcc_features = mfcc_features.reshape([1, -1])
         ret.append(mfcc_features)
-    # print("Calculation of MFCC completed!")
     return np.array(ret)
 
 
+# Calculate PLP (perceptual linear predictive) coefficients (top 15)
+def perceptual_linear_predictive(frames, frame_size, frame_shift, sample_rate):
+    ret = []
+
+    # Transform the linear frequency coordinate to Bark coordinate
+    def bark_transform(x):
+        return 6 * np.log10(x / (1200 * np.pi) + ((x / (1200 * np.pi)) ** 2 + 1) ** 0.5)
+
+    # Equal loudness curve
+    def equal_loudness(x):
+        return ((x ** 2 + 56.8e6) * x ** 4) / ((x ** 2 + 6.3e6) ** 2 * (x ** 2 + 3.8e8))
+
+    for idx in range(len(frames)):
+        # FFT
+        a = np.fft.fft(frames[idx])
+        # Square, and only half
+        N = int(frame_size / 2)
+        b = np.square(abs(a[0:N]))
+        # 频率分辨率
+        df = sample_rate / N
+        # 只取大于0部分的频率
+        i = np.arange(N)
+        # 得到实际频率坐标
+        freq_hz = i * df
+        # plt.plot(freq_hz, b)  # 得到该帧信号的功率谱
+        # plt.show()
+        freq_w = 2 * np.pi * np.array(freq_hz)  # 转换为角频率
+        freq_bark = bark_transform(freq_w)  # 再转换为bark频率
+        point_hz = [250, 350, 450, 570, 700, 840, 1000, 1170, 1370, 1600, 1850, 2150, 2500, 2900, 3400]
+        # 选取的临界频带数量一般要大于10，覆盖常用频率范围，这里我选取了15个中心频点
+        point_w = 2 * np.pi * np.array(point_hz)  # 转换为角频率
+        point_bark = bark_transform(point_w)  # 转换为bark频率
+        bank = np.zeros((15, len(b)))  # 构造15行(frame_size / 2)列的矩阵，每一行为一个滤波器向量
+        filter_data = np.zeros(15)  # 构造15维频带能量向量
+
+        for j in range(15):
+            for k in range(len(b)):
+                omg = freq_bark[k] - point_bark[j]
+                if -1.3 < omg < -0.5:
+                    bank[j, k] = 10 ** (2.5 * (omg + 0.5))
+                elif -0.5 < omg < 0.5:
+                    bank[j, k] = 1
+                elif 0.5 < omg < 2.5:
+                    bank[j, k] = 10 ** (-1.0 * (omg - 0.5))
+                else:
+                    bank[j, k] = 0
+            filter_data[j] = np.sum(b * bank[j])  # 滤波后将该段信号相加，最终得到15维的频带能量
+
+        equal_data = equal_loudness(point_w) * filter_data
+        cubic_data = equal_data ** 0.33
+        # 做30点的ifft，得到30维PLP向量
+        plp_data = np.fft.ifft(cubic_data, 30)
+        # print(plp_data)
+        # print(len(plp_data))
+        # features = librosa.lpc(abs(plp_data), 15)
+
+        # 取前15维作语音信号处理
+        features = plp_data[0:15]
+        # PLP will cause complex number
+        ret.append(abs(features))
+
+    return ret
+
+
 # Construct the features vector
-def construct_features_vector(frames, STE_list, ZCR_list, fft_max_arg_list, mfcc_features_list):
+def construct_features_vector(frames, STE_list, ZCR_list, plp_features_list, mfcc_features_list):
     ret = []
     for i in range(len(frames)):
-        features_vector = [STE_list[i], ZCR_list[i], fft_max_arg_list[i]]
+        # STE, ZCR
+        features_vector = [STE_list[i], ZCR_list[i]]
+        # PLP
+        for j in range(len(plp_features_list[i])):
+            features_vector.append(plp_features_list[i][j])
+        # MFCC
         for j in range(len(mfcc_features_list[i][0])):
             features_vector.append(mfcc_features_list[i][0][j])
         ret.append(np.array(features_vector))
     return np.array(ret)
 
 
-# Draw audio time domain diagram
-def draw_time_domain_diagram(audio, energies, ori_frame, frame, ZCR, mfcc_features, fft_signal, fft_x):
-    print("Begin draw results...")
+# # Self-Correlation
+# # Return the array and the basic frequency
+# def self_correlation(audio, frame_size, frame_shift, sample_rate):
+#     print("Begin Self Correlation...")
+#
+#     # Time mark
+#     time_mark = time.process_time()
+#
+#     f0_signal = librosa.yin(audio, fmin=f_min, fmax=f_max, sr=sample_rate, frame_length=len(audio), win_length=frame_size,
+#                             hop_length=frame_shift)
+#
+#     # Smooth
+#     # Median filter
+#     f0_signal = signal.medfilt(f0_signal, 5)
+#     # Low pass
+#     f0_signal = signal.savgol_filter(f0_signal, 5, 2)
+#
+#     return np.array(f0_signal)
 
-    # Figure size
-    plt.rcParams['figure.figsize'] = (20.0, 42.0)
 
-    # Audio signal
-    plt.subplot(711)  # row col pos
-    x = np.arange(len(audio))
-    plt.plot(x, audio, 'black')
-    plt.title("Audio Signal on Time Domain")
-    plt.xlabel("Sample points")
-    plt.ylabel("Amplitude")
-    # Fourier Transform
-    plt.subplot(712)
-    # X-axis transform in Fast Fourier Transform
-    plt.plot(fft_x, fft_signal, 'black')
-    plt.title("The Fourier Transform signal on Frequency Domain")
-    plt.xlabel("frequency")
-    plt.ylabel("Amplitude")
-    ax = plt.gca()
-    x_major_locator = plt.MultipleLocator(500)
-    ax.xaxis.set_major_locator(x_major_locator)
-    plt.xlim(0, len(fft_x))
-    # Original 30th frame
-    plt.subplot(713)
-    x = np.arange(len(ori_frame))
-    plt.plot(x, ori_frame, 'black')
-    plt.title("The frame of original audio")
-    plt.xlabel("sample points")
-    plt.ylabel("Amplitude")
-    # Windowed 30th frame
-    plt.subplot(714)
-    x = np.arange(len(frame))
-    plt.plot(x, frame, 'black')
-    plt.title("The frame of windowed audio")
-    plt.xlabel("sample points")
-    plt.ylabel("Amplitude")
-    # Short-Term Energy
-    plt.subplot(715)
-    x = np.arange(len(energies))
-    plt.plot(x, energies, 'black')
-    plt.title("Short-Term Energy")
-    plt.xlabel("frame")
-    plt.ylabel("Amplitude")
-    # Zero-Crossing Rate
-    plt.subplot(716)
-    x = np.arange(len(ZCR))
-    plt.plot(x, ZCR, 'black')
-    plt.title("The Zero-Crossing Rate of windowed audio")
-    plt.xlabel("frame")
-    plt.ylabel("Amplitude")
-
-    # MFCC
-    plt.subplot(717)
-    x = np.arange(len(mfcc_features))
-    plt.plot(x, mfcc_features, 'black')
-    plt.title("The MFCC Features of a Certain Frame")
-    plt.xlabel("features")
-    plt.ylabel("Amplitude")
-
-    plt.savefig("./output/output")
-    plt.show()
+# # Draw audio time domain diagram
+# def draw_time_domain_diagram(audio, energies, ori_frame, frame, ZCR, mfcc_features, fft_signal, fft_x):
+#     print("Begin draw results...")
+#
+#     # Figure size
+#     plt.rcParams['figure.figsize'] = (20.0, 42.0)
+#
+#     # Audio signal
+#     plt.subplot(711)  # row col pos
+#     x = np.arange(len(audio))
+#     plt.plot(x, audio, 'black')
+#     plt.title("Audio Signal on Time Domain")
+#     plt.xlabel("Sample points")
+#     plt.ylabel("Amplitude")
+#     # Fourier Transform
+#     plt.subplot(712)
+#     # X-axis transform in Fast Fourier Transform
+#     plt.plot(fft_x, fft_signal, 'black')
+#     plt.title("The Fourier Transform signal on Frequency Domain")
+#     plt.xlabel("frequency")
+#     plt.ylabel("Amplitude")
+#     ax = plt.gca()
+#     x_major_locator = plt.MultipleLocator(500)
+#     ax.xaxis.set_major_locator(x_major_locator)
+#     plt.xlim(0, len(fft_x))
+#     # Original 30th frame
+#     plt.subplot(713)
+#     x = np.arange(len(ori_frame))
+#     plt.plot(x, ori_frame, 'black')
+#     plt.title("The frame of original audio")
+#     plt.xlabel("sample points")
+#     plt.ylabel("Amplitude")
+#     # Windowed 30th frame
+#     plt.subplot(714)
+#     x = np.arange(len(frame))
+#     plt.plot(x, frame, 'black')
+#     plt.title("The frame of windowed audio")
+#     plt.xlabel("sample points")
+#     plt.ylabel("Amplitude")
+#     # Short-Term Energy
+#     plt.subplot(715)
+#     x = np.arange(len(energies))
+#     plt.plot(x, energies, 'black')
+#     plt.title("Short-Term Energy")
+#     plt.xlabel("frame")
+#     plt.ylabel("Amplitude")
+#     # Zero-Crossing Rate
+#     plt.subplot(716)
+#     x = np.arange(len(ZCR))
+#     plt.plot(x, ZCR, 'black')
+#     plt.title("The Zero-Crossing Rate of windowed audio")
+#     plt.xlabel("frame")
+#     plt.ylabel("Amplitude")
+#
+#     # MFCC
+#     plt.subplot(717)
+#     x = np.arange(len(mfcc_features))
+#     plt.plot(x, mfcc_features, 'black')
+#     plt.title("The MFCC Features of a Certain Frame")
+#     plt.xlabel("features")
+#     plt.ylabel("Amplitude")
+#
+#     plt.savefig("./output/output")
+#     plt.show()

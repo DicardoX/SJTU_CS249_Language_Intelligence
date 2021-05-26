@@ -4,7 +4,7 @@ from vad_utils import read_label_from_file
 from evaluate import get_metrics
 
 # Label path
-label_path = "../vad/data/train_label.txt"
+label_path = "../vad/data/dev_label.txt"
 labels_list = read_label_from_file(label_path, frame_size=0.03, frame_shift=0.015)
 # Sort by keys
 labels_list = sorted(labels_list.items(), key=lambda d: d[0])
@@ -12,14 +12,14 @@ for i in range(len(labels_list)):
     labels_list[i] = labels_list[i][1]
 
 # Prediction path
-pred_path = "./output/train_prediction.txt"
+pred_path = "./output/dev_prediction.txt"
 pred_list = read_label_from_file(pred_path, frame_size=0.03, frame_shift=0.015)
 # Sort by keys
 pred_list = sorted(pred_list.items(), key=lambda d: d[0])
 for i in range(len(pred_list)):
     pred_list[i] = pred_list[i][1]
 
-print("Amount of prediction lists:", len(pred_list))
+print("Amount of predict result in prediction list:", len(pred_list))
 
 total_auc = 0
 total_eer = 0

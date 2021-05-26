@@ -366,15 +366,15 @@ def train_main():
 
 
 def main():
-    # # Dev main, if you don't want to run developing method (model train and evaluate), just comment it!
-    # dev_main()
+    # Dev main, if you don't want to run developing method (model train and evaluate), just comment it!
+    dev_main()
 
     # # Test main, if you don't want to run testing method (generate predictions on test dataset), just comment it!
     # test_main()
 
-    # Train main, only for local test for AUC and ERR (since it's not used in task 1),
-    # just comment it if you don't want to evaluate the model on train dataset!
-    train_main()
+    # # Train main, only for local test for AUC and ERR (since it's not used in task 1),
+    # # just comment it if you don't want to evaluate the model on train dataset!
+    # train_main()
 
 
 if __name__ == '__main__':

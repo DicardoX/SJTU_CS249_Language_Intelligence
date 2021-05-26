@@ -26,19 +26,6 @@ from scipy import signal
 f_min = 1
 f_max = 600
 
-# Fundamental frequency range
-f_human_min = 80
-f_human_max = 500
-
-
-# Import the input source, audio(音频，np.array), sampleRate(采样率), duration(时长(s))
-# def get_input(audioPath):
-#     audio, sample_rate = librosa.load(audioPath, sr=None, mono=True, offset=0.0)
-#
-#     duration = len(audio) * 1.0 / sample_rate
-#     print("Input completed! Sample rate:", sample_rate, "| duration:", duration)
-#     return audio, sample_rate, duration
-
 
 # Get the dataset
 # Dataset_type: 0 for dev, 1 for test, 2 for train
@@ -113,10 +100,6 @@ def get_input(dirPath, dataset_type):
     else:
         return np.array(audio_list), np.array(sample_rate_list), np.array(duration_list)
 
-    # duration = len(audio) * 1.0 / sample_rate
-    # print("Input completed! Sample rate:", sample_rate, "| duration:", duration)
-    # return audio, sample_rate, duration
-
 
 # Self-Correlation
 # Return the array and the basic frequency
@@ -134,21 +117,9 @@ def self_correlation(audio, frame_size, frame_shift, sample_rate):
     f0_signal = signal.medfilt(f0_signal, 5)
     # Low pass
     f0_signal = signal.savgol_filter(f0_signal, 5, 2)
-
     # print("Calculation of fundamental frequency completed, totally " + str((round(time.process_time() - time_mark, 3))) + " seconds spent...")
 
     return np.array(f0_signal)
-
-    # ret = []
-    # for l in range(0, maxT, 1):
-    #     tmp_sum = 0
-    #     for j in range(0, len(frame) - l, 1):
-    #         tmp_sum += frame[j + l] * frame[j]
-    #     ret.append(tmp_sum)
-    # print("Self Correlation completed, begin calculate the basic frequency...")
-    # # Get the peak of the curve, note that it is in FRAME unit!
-
-    # return ret
 
 
 # Implement Window: Rectangle/Hanning/Hamming, N is window length

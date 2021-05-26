@@ -8,6 +8,10 @@
 
 [Scikit-Learn学习笔记——高斯混合模型(GMM)应用：分类、密度估计、生成模型](https://blog.csdn.net/jasonzhoujx/article/details/81947663)
 
+[plp特征提取原理和方法](https://blog.csdn.net/weixin_30295091/article/details/94781084)
+
+[Python语音信号特征-感知线性预测系数PLP](https://blog.csdn.net/weixin_42485817/article/details/107590846)
+
 -------------
 
 ## 1. 清音段、浊音段和过渡段
@@ -70,5 +74,15 @@
 
 ### 7.高斯混合模型 *GMM* 及其 *EM* 算法
 
-​	[Ref](https://blog.csdn.net/jinping_shi/article/details/59613054/)
+[Ref](https://blog.csdn.net/jinping_shi/article/details/59613054/)
+
+-----
+
+## 8. 感知线性预测系数 *PLP*
+
+[Ref](https://blog.csdn.net/weixin_42485817/article/details/107590846)
+
+[Ref](https://blog.csdn.net/weixin_30295091/article/details/94781084)
+
+-----
 

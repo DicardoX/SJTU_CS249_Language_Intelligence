@@ -1,5 +1,5 @@
 import secrets
-from Project1.Utils import *
+from Project1_2.Utils import *
 import warnings
 import time
 
@@ -10,7 +10,7 @@ warnings.filterwarnings("ignore")
 frame_size = 512  # Width of window
 frame_shift = int(frame_size / 2)  # Shift of window
 sample_rate = 16000  # Sample rate
-time_unit = 30       # Time unit for each frame
+time_unit = 30  # Time unit for each frame
 
 # Reconstructed dev dataset of features vector list
 dev_features_vector_list_dataset = []
@@ -70,7 +70,8 @@ def reformat_labels_list(data_type):
     time_mark = time.process_time()
 
     # for i in range(10):
-    total_amount = len(labels_list) if data_type == 0 else 500
+    # total_amount = len(labels_list) if data_type == 0 else 200
+    total_amount = len(labels_list)
     for i in range(total_amount):
         labels_vector = labels_list[i]
         # [0] for wav id, [1] for labels for each frame (a list)
@@ -96,7 +97,8 @@ def reformat_labels_list(data_type):
         if i == 0:
             if data_type == 0:
                 print("Estimated time for reformatting labels list:",
-                    str(round(time.process_time() - time_mark, 3) * len(dev_features_vector_list_dataset)), "seconds...")
+                      str(round(time.process_time() - time_mark, 3) * len(dev_features_vector_list_dataset)),
+                      "seconds...")
             else:
                 print("Estimated time for reformatting labels list:",
                       str(round(time.process_time() - time_mark, 3) * len(train_features_vector_list_dataset)),
@@ -135,7 +137,7 @@ def construct_dataset(dataset_type):
         # Input
         audio_list, sample_rate_list, duration_list, labels_list = get_input("../vad", 2)  # 2 for train dataset
         # Total amount of samples
-        total_amount = 500
+        total_amount = len(audio_list)
 
     # Calculate frame size to make the unit time in 10 ~ 30ms, here is 25ms
     frame_size = int(time_unit * sample_rate_list[0] / 1000)
@@ -160,23 +162,20 @@ def construct_dataset(dataset_type):
 
         # Divide frames and add windows
         ori_frames, frames, time_for_each_frame = divide_frames(audio, frame_size, frame_shift, duration)
-        # Fourier transform
-        fft_max_arg = fourier_transform(audio, frames, frame_size, frame_shift, sample_rate)
+        # # Fourier transform
+        # fft_max_arg = fourier_transform(audio, frames, frame_size, frame_shift, sample_rate)
         # Calculate Short-term Energy
         STE = generate_short_term_energy(frames)
         # Calculate Zero-Crossing Rate
         ZCR = cal_zero_crossing_rate(frames, audio, frame_size)
-        # # Calculate Self-Correlation
-        # SCC = self_correlation(audio, frame_size, frame_shift, sample_rate)
+        # Calculate PLP
+        plp_features_list = perceptual_linear_predictive(frames, frame_size, frame_shift, sample_rate)
         # Calculate MFCC
         mfcc_features_list = cal_MFCC(frames, frame_size, sample_rate)
-        # # Draw results
-        # draw_time_domain_diagram(audio, energies, ori_frames[frame_order], frames[frame_order], ZCR, mfcc_features_list[frame_order][0], fft_signals[frame_order],
-        #                          fft_x)
 
         # Construct the features vector list
         features_vector_list = construct_features_vector(frames=frames, STE_list=STE, ZCR_list=ZCR,
-                                                         fft_max_arg_list=fft_max_arg,
+                                                         plp_features_list=plp_features_list,
                                                          mfcc_features_list=mfcc_features_list)
 
         # Push into dataset
@@ -195,15 +194,15 @@ def construct_dataset(dataset_type):
 
 
 if __name__ == '__main__':
-    # Construct dev dataset, uncomment when reconstruction of dataset is needed
-    construct_dataset(0)
-    # Reformat labels list
-    reformat_labels_list(0)
-    print("Length of dev dataset:", len(dev_features_vector_list_dataset))
-    # Save data, uncomment when reconstruction of dataset is needed
-    print("Saving dev data...")
-    np.save("./input/features/dev_features.npy", dev_features_vector_list_dataset)
-    np.save("./input/labels/dev_labels.npy", labels_list)
+    # # Construct dev dataset, uncomment when reconstruction of dataset is needed
+    # construct_dataset(0)
+    # # Reformat labels list
+    # reformat_labels_list(0)
+    # print("Length of dev dataset:", len(dev_features_vector_list_dataset))
+    # # Save data, uncomment when r econstruction of dataset is needed
+    # print("Saving dev data...")
+    # np.save("./input/features/dev_features.npy", dev_features_vector_list_dataset)
+    # np.save("./input/labels/dev_labels.npy", labels_list)
 
     # # Construct test dataset，uncomment when reconstruction of dataset is needed
     # construct_dataset(1)
@@ -212,13 +211,12 @@ if __name__ == '__main__':
     # print("Saving test data...")
     # np.save("./input/features/test_features.npy", test_features_vector_list_dataset)
 
-    # # Construct train dataset，uncomment when reconstruction of dataset is needed
-    # construct_dataset(2)
-    # # Reformat labels list
-    # reformat_labels_list(2)
-    # print("Length of train dataset:", len(train_features_vector_list_dataset))
-    # # Save data, uncomment when reconstruction of dataset is needed
-    # print("Saving train data...")
-    # np.save("./input/features/train_features.npy", train_features_vector_list_dataset)
-    # np.save("./input/labels/train_labels.npy", labels_list)
-
+    # Construct train dataset，uncomment when reconstruction of dataset is needed
+    construct_dataset(2)
+    # Reformat labels list
+    reformat_labels_list(2)
+    print("Length of train dataset:", len(train_features_vector_list_dataset))
+    # Save data, uncomment when reconstruction of dataset is needed
+    print("Saving train data...")
+    np.save("./input/features/train_features.npy", train_features_vector_list_dataset)
+    np.save("./input/labels/train_labels.npy", labels_list)
