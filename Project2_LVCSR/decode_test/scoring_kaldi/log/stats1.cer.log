@@ -1,0 +1,10 @@
+# cat exp/nnet3/new_dnn_sp/decode_test/scoring_kaldi/penalty_0.5/15.chars.txt | align-text --special-symbol='***' ark:exp/nnet3/new_dnn_sp/decode_test/scoring_kaldi/test_filt.chars.txt ark:- ark,t:- | utils/scoring/wer_per_utt_details.pl --special-symbol '***' | tee exp/nnet3/new_dnn_sp/decode_test/scoring_kaldi/cer_details/per_utt | utils/scoring/wer_per_spk_details.pl data/test_hires/utt2spk > exp/nnet3/new_dnn_sp/decode_test/scoring_kaldi/cer_details/per_spk 
+# Started at Sun Jun 27 20:17:15 CST 2021
+#
+align-text '--special-symbol=***' ark:exp/nnet3/new_dnn_sp/decode_test/scoring_kaldi/test_filt.chars.txt ark:- ark,t:- 
+utils/scoring/wer_per_spk_details.pl: Note: handling as utf-8 text
+LOG (align-text[5.5.948~1-707bf]:main():align-text.cc:135) Done 7176 sentences, failed for 0
+utils/scoring/wer_per_utt_details.pl: Note: handling as utf-8 text
+utils/scoring/wer_per_spk_details.pl: Note: handling as utf-8 text
+# Accounting: time=1 threads=1
+# Ended (code 0) at Sun Jun 27 20:17:16 CST 2021, elapsed time 1 seconds

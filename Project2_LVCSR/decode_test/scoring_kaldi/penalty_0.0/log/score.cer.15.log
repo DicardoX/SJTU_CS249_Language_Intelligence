@@ -1,0 +1,5 @@
+# cat exp/nnet3/new_dnn_sp/decode_test/scoring_kaldi/penalty_0.0/15.chars.txt | compute-wer --text --mode=present ark:exp/nnet3/new_dnn_sp/decode_test/scoring_kaldi/test_filt.chars.txt ark,p:- >& exp/nnet3/new_dnn_sp/decode_test/cer_15_0.0 
+# Started at Sun Jun 27 20:17:15 CST 2021
+#
+# Accounting: time=0 threads=1
+# Ended (code 0) at Sun Jun 27 20:17:15 CST 2021, elapsed time 0 seconds

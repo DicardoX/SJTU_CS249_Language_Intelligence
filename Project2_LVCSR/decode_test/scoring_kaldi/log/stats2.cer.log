@@ -1,0 +1,6 @@
+# cat exp/nnet3/new_dnn_sp/decode_test/scoring_kaldi/cer_details/per_utt | utils/scoring/wer_ops_details.pl --special-symbol '***' | sort -b -i -k 1,1 -k 4,4rn -k 2,2 -k 3,3 > exp/nnet3/new_dnn_sp/decode_test/scoring_kaldi/cer_details/ops 
+# Started at Sun Jun 27 20:17:16 CST 2021
+#
+utils/scoring/wer_ops_details.pl: Note: handling as utf-8 text
+# Accounting: time=0 threads=1
+# Ended (code 0) at Sun Jun 27 20:17:16 CST 2021, elapsed time 0 seconds
