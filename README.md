@@ -1,5 +1,16 @@
 # SJTU_CS249_Language_Intelligence
 
+#### Outline
+
+- Project1: [VAD by Logistic Regression](https://github.com/DicardoX/SJTU_CS249_Language_Intelligence/tree/main/Project1)
+- Project1_2: [VADS by Gaussian Mixture Model](https://github.com/DicardoX/SJTU_CS249_Language_Intelligence/tree/main/Project1_2)
+- Project2: [LVCSR System](https://github.com/DicardoX/SJTU_CS249_Language_Intelligence/tree/main/Project2_LVCSR)
+- Lectures
+
+--------
+
+#### Refs
+
 [[python做语音信号处理](https://www.cnblogs.com/LXP-Never/p/10078200.html#信号加窗%C2%A0)]
 
 [python如何 FFT(快速傅里叶变换) 求幅度、频率（超详细 含推导过程）](https://blog.csdn.net/weixin_39591031/article/details/110392352) 
